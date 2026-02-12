@@ -1,8 +1,9 @@
+import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 
-import { FileText, Clock, ChevronRight } from 'lucide-react';
+import { FileText, Clock, ChevronRight, ArrowLeft } from 'lucide-react';
 
 const loans = [
     {
@@ -30,13 +31,25 @@ const loans = [
 ];
 
 export const MyLoans = () => {
+    const navigate = useNavigate();
+
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-light-text-primary dark:text-dark-text-primary">
-                    My Loans
-                </h1>
-                <Button variant="outline">Download Statement</Button>
+            <div>
+                <Button
+                    variant="ghost"
+                    className="mb-2 pl-0 hover:bg-transparent hover:text-primary"
+                    leftIcon={<ArrowLeft className="w-4 h-4" />}
+                    onClick={() => navigate(-1)}
+                >
+                    Back
+                </Button>
+                <div className="flex items-center justify-between">
+                    <h1 className="text-2xl font-bold text-light-text-primary dark:text-dark-text-primary">
+                        My Loans
+                    </h1>
+                    <Button variant="outline">Download Statement</Button>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 gap-6">

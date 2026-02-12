@@ -1,20 +1,30 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { ChevronRight, Check, AlertCircle } from 'lucide-react';
+import { ChevronRight, Check, AlertCircle, ArrowLeft } from 'lucide-react';
 
 const steps = ['Personal Info', 'Loan Details', 'Documents', 'Review'];
 
 export const LoanApplication = () => {
     const [currentStep, setCurrentStep] = useState(0);
+    const navigate = useNavigate();
 
-    const nextStep = () => setCurrentStep((p) => Math.min(p + 1, steps.length - 1));
-    const prevStep = () => setCurrentStep((p) => Math.max(p - 1, 0));
+    const nextStep = () => setCurrentStep((p: number) => Math.min(p + 1, steps.length - 1));
+    const prevStep = () => setCurrentStep((p: number) => Math.max(p - 1, 0));
 
     return (
         <div className="max-w-3xl mx-auto space-y-8">
             <div>
+                <Button
+                    variant="ghost"
+                    className="mb-4 pl-0 hover:bg-transparent hover:text-primary"
+                    leftIcon={<ArrowLeft className="w-4 h-4" />}
+                    onClick={() => navigate(-1)}
+                >
+                    Back
+                </Button>
                 <h1 className="text-2xl font-bold text-light-text-primary dark:text-dark-text-primary mb-2">
                     Apply for a Loan
                 </h1>

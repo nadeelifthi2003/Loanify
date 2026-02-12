@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { useTheme } from '@/contexts/ThemeContext';
+import { Button } from '@/components/ui/Button';
+import { ArrowLeft } from 'lucide-react';
 
 export const EMICalculator = () => {
     const { theme } = useTheme();
+    const navigate = useNavigate();
     const [amount, setAmount] = useState<number>(10000);
     const [rate, setRate] = useState<number>(8.5);
     const [tenure, setTenure] = useState<number>(24);
@@ -38,6 +42,14 @@ export const EMICalculator = () => {
     return (
         <div className="space-y-6">
             <div className="mb-6">
+                <Button
+                    variant="ghost"
+                    className="mb-2 pl-0 hover:bg-transparent hover:text-primary"
+                    leftIcon={<ArrowLeft className="w-4 h-4" />}
+                    onClick={() => navigate(-1)}
+                >
+                    Back
+                </Button>
                 <h1 className="text-2xl font-bold text-light-text-primary dark:text-dark-text-primary">
                     EMI Calculator
                 </h1>
