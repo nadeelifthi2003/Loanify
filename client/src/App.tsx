@@ -10,6 +10,7 @@ import { CustomerDashboard } from '@/features/customer/pages/CustomerDashboard';
 import { MyLoans } from '@/features/customer/pages/MyLoans';
 import { LoanApplication } from '@/features/customer/pages/LoanApplication';
 import { EMICalculator } from '@/features/customer/pages/EMICalculator';
+import { Settings } from '@/features/customer/pages/Settings';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 
 import { OfficerDashboard } from '@/features/officer/pages/OfficerDashboard';
@@ -41,6 +42,7 @@ function App() {
               <Route path="loans" element={<MyLoans />} />
               <Route path="apply" element={<LoanApplication />} />
               <Route path="calculator" element={<EMICalculator />} />
+              <Route path="settings" element={<Settings />} />
             </Route>
 
             {/* Officer Routes */}
