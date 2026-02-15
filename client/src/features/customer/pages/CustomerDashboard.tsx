@@ -1,10 +1,36 @@
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { DollarSign, CreditCard, Calendar, ArrowUpRight, TrendingUp } from 'lucide-react';
+import { DollarSign, CreditCard, Calendar, ArrowUpRight, TrendingUp, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+import { useState, useEffect } from 'react';
+
+interface Application {
+    id: string;
+    status: string;
+    date: string;
+    loanAmount: string;
+    loanCurrency: string;
+    loanPurpose: string;
+}
+
 export const CustomerDashboard = () => {
+    const [recentApplications, setRecentApplications] = useState<Application[]>([]);
+
+    useEffect(() => {
+        const fetchApplications = async () => {
+            try {
+                const response = await fetch('http://localhost:5000/api/applications/my-applications');
+                const data = await response.json();
+                setRecentApplications(data);
+            } catch (error) {
+                console.error('Error fetching applications:', error);
+            }
+        };
+
+        fetchApplications();
+    }, []);
     return (
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -72,27 +98,37 @@ export const CustomerDashboard = () => {
                 {/* Recent Activity */}
                 <div className="lg:col-span-2 space-y-4">
                     <div className="flex items-center justify-between">
-                        <h2 className="text-lg font-semibold text-light-text-primary dark:text-dark-text-primary">Recent Transactions</h2>
+                        <h2 className="text-lg font-semibold text-light-text-primary dark:text-dark-text-primary">Recent Applications</h2>
                         <Link to="/customer/loans" className="text-sm text-primary hover:underline">View All</Link>
                     </div>
                     <Card className="divide-y divide-light-border dark:divide-dark-border">
-                        {[1, 2, 3].map((i) => (
-                            <div key={i} className="p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
-                                        <DollarSign className="w-5 h-5 text-slate-600 dark:text-slate-400" />
-                                    </div>
-                                    <div>
-                                        <p className="font-medium text-light-text-primary dark:text-dark-text-primary">Monthly EMI Payment</p>
-                                        <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary">Personal Loan #L-8321</p>
-                                    </div>
-                                </div>
-                                <div className="text-right">
-                                    <p className="font-bold text-light-text-primary dark:text-dark-text-primary">-$850.00</p>
-                                    <p className="text-xs text-light-text-muted dark:text-dark-text-muted">Aug 25, 2024</p>
-                                </div>
+                        {recentApplications.length === 0 ? (
+                            <div className="p-8 text-center text-slate-500">
+                                No recent applications found.
                             </div>
-                        ))}
+                        ) : (
+                            recentApplications.map((app) => (
+                                <div key={app.id} className="p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900/20 flex items-center justify-center">
+                                            <FileText className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                                        </div>
+                                        <div>
+                                            <p className="font-medium text-light-text-primary dark:text-dark-text-primary">{app.loanPurpose}</p>
+                                            <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary">Application #{app.id}</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="font-bold text-light-text-primary dark:text-dark-text-primary">
+                                            {app.loanCurrency} {Number(app.loanAmount).toLocaleString()}
+                                        </p>
+                                        <Badge variant="warning" size="sm" className="mt-1">
+                                            {app.status}
+                                        </Badge>
+                                    </div>
+                                </div>
+                            ))
+                        )}
                     </Card>
                 </div>
 

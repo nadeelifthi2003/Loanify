@@ -1,134 +1,223 @@
+import { useNavigate, useParams } from 'react-router-dom';
 import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { User, DollarSign, FileText, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
-
+import { CheckCircle, XCircle, Download, FileText, ArrowLeft } from 'lucide-react';
 
 export const ApplicationVerification = () => {
-    // Mock status for now
-    // const [status] = useState('pending');
+    const navigate = useNavigate();
+    const { id } = useParams();
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <div className="flex items-center gap-2 mb-1">
-                        <h1 className="text-2xl font-bold text-light-text-primary dark:text-dark-text-primary">
-                            Application #L-1002
-                        </h1>
-                        <Badge variant="warning">Review Required</Badge>
-                    </div>
-                    <p className="text-light-text-secondary dark:text-dark-text-secondary">
-                        Submitted on Oct 24, 2023 by Bob Jones
-                    </p>
-                </div>
-                <div className="flex gap-2">
-                    <Button variant="danger" leftIcon={<XCircle className="w-4 h-4" />}>Reject</Button>
-                    <Button variant="outline" leftIcon={<AlertTriangle className="w-4 h-4" />}>Flag Risk</Button>
-                    <Button variant="primary" leftIcon={<CheckCircle className="w-4 h-4" />}>Approve</Button>
-                </div>
+        <div className="space-y-6 animate-fade-in text-light-text-primary dark:text-dark-text-primary">
+            {/* Header */}
+            <div>
+                <Button
+                    variant="ghost"
+                    className="mb-2 pl-0 hover:bg-transparent hover:text-primary"
+                    leftIcon={<ArrowLeft className="w-4 h-4" />}
+                    onClick={() => navigate(-1)}
+                >
+                    Back
+                </Button>
+                <h1 className="text-xl font-medium text-gray-600 dark:text-gray-300">Review Loan Application</h1>
+                <p className="text-sm text-gray-500 mt-1">Application ID: <span className="text-gray-700 dark:text-gray-200 font-medium">#PL-2025-00234</span></p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Main Content - Left Column (2/3) */}
                 <div className="lg:col-span-2 space-y-6">
-                    {/* Applicant Details */}
+
+                    {/* Applicant Information */}
                     <Card className="p-6">
-                        <h3 className="text-lg font-semibold mb-4 text-light-text-primary dark:text-dark-text-primary">Applicant Information</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                                <User className="w-5 h-5 text-slate-500" />
-                                <div>
-                                    <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary">Full Name</p>
-                                    <p className="font-medium text-light-text-primary dark:text-dark-text-primary">Bob Jones</p>
-                                </div>
+                        <h2 className="text-base font-medium text-gray-700 dark:text-gray-200 mb-6">Applicant Information</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12">
+                            <div>
+                                <p className="text-xs text-gray-500 mb-1">Full Name</p>
+                                <p className="text-sm font-medium">Sarah Johnson</p>
                             </div>
-                            <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                                <DollarSign className="w-5 h-5 text-slate-500" />
-                                <div>
-                                    <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary">Annual Income</p>
-                                    <p className="font-medium text-light-text-primary dark:text-dark-text-primary">$85,000</p>
-                                </div>
+                            <div>
+                                <p className="text-xs text-gray-500 mb-1">NIC / Passport</p>
+                                <p className="text-sm font-medium">987654321V</p>
                             </div>
-                            <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                                <FileText className="w-5 h-5 text-slate-500" />
-                                <div>
-                                    <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary">Employment</p>
-                                    <p className="font-medium text-light-text-primary dark:text-dark-text-primary">Software Engineer (3 Years)</p>
-                                </div>
+                            <div>
+                                <p className="text-xs text-gray-500 mb-1">Email</p>
+                                <p className="text-sm font-medium">sarah.johnson@email.com</p>
                             </div>
-                            <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                                <AlertTriangle className="w-5 h-5 text-amber-500" />
-                                <div>
-                                    <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary">Credit Score</p>
-                                    <p className="font-medium text-light-text-primary dark:text-dark-text-primary">680 (Classic FICO)</p>
-                                </div>
+                            <div>
+                                <p className="text-xs text-gray-500 mb-1">Phone</p>
+                                <p className="text-sm font-medium">+1 234 567 8901</p>
+                            </div>
+                            <div className="md:col-span-2">
+                                <p className="text-xs text-gray-500 mb-1">Address</p>
+                                <p className="text-sm font-medium">456 Oak Avenue, Los Angeles, CA 90001</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-gray-500 mb-1">Employment Status</p>
+                                <p className="text-sm font-medium">Full-time Employed</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-gray-500 mb-1">Employer</p>
+                                <p className="text-sm font-medium">Tech Corp Inc.</p>
                             </div>
                         </div>
                     </Card>
 
-                    {/* Loan Details */}
+                    {/* Financial Information */}
                     <Card className="p-6">
-                        <h3 className="text-lg font-semibold mb-4 text-light-text-primary dark:text-dark-text-primary">Loan Request</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <h2 className="text-base font-medium text-gray-700 dark:text-gray-200 mb-6">Financial Information</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12">
                             <div>
-                                <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">Amount</p>
-                                <p className="text-2xl font-bold text-light-text-primary dark:text-dark-text-primary">$250,000</p>
+                                <p className="text-xs text-gray-500 mb-1">Monthly Income</p>
+                                <p className="text-sm font-medium">$5,500</p>
                             </div>
                             <div>
-                                <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">Purpose</p>
-                                <p className="text-xl font-medium text-light-text-primary dark:text-dark-text-primary">Home Purchase</p>
+                                <p className="text-xs text-gray-500 mb-1">Existing Loans</p>
+                                <p className="text-sm font-medium">1 (Auto Loan)</p>
                             </div>
                             <div>
-                                <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">Term</p>
-                                <p className="text-xl font-medium text-light-text-primary dark:text-dark-text-primary">360 Months</p>
+                                <p className="text-xs text-gray-500 mb-1">Current EMI</p>
+                                <p className="text-sm font-medium">$450/month</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-gray-500 mb-1">Credit Score</p>
+                                <p className="text-sm font-medium">720</p>
                             </div>
                         </div>
                     </Card>
-                </div>
 
-                {/* Risk & Documents */}
-                <div className="space-y-6">
-                    <Card className="p-6 border-l-4 border-l-amber-500">
-                        <h3 className="text-lg font-semibold mb-2 text-light-text-primary dark:text-dark-text-primary">Risk Assessment</h3>
+                    {/* Requested Loan Details */}
+                    <Card className="p-6">
+                        <h2 className="text-base font-medium text-gray-700 dark:text-gray-200 mb-6">Requested Loan Details</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12">
+                            <div>
+                                <p className="text-xs text-gray-500 mb-1">Loan Type</p>
+                                <p className="text-sm font-medium">Personal Loan</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-gray-500 mb-1">Requested Amount</p>
+                                <p className="text-sm font-medium">$15,000</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-gray-500 mb-1">Duration</p>
+                                <p className="text-sm font-medium">36 months</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-gray-500 mb-1">Interest Rate</p>
+                                <p className="text-sm font-medium">8.5%</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-gray-500 mb-1">Calculated EMI</p>
+                                <p className="text-sm font-medium">$475/month</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-gray-500 mb-1">Total Payable</p>
+                                <p className="text-sm font-medium">$17,100</p>
+                            </div>
+                        </div>
+                    </Card>
+
+                    {/* Uploaded Documents */}
+                    <Card className="p-6">
+                        <h2 className="text-base font-medium text-gray-700 dark:text-gray-200 mb-6">Uploaded Documents</h2>
                         <div className="space-y-3">
-                            <div>
-                                <div className="flex justify-between text-sm mb-1">
-                                    <span className="text-light-text-secondary dark:text-dark-text-secondary">Debt-to-Income Ratio</span>
-                                    <span className="font-medium text-amber-600">42%</span>
-                                </div>
-                                <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                                    <div className="h-full bg-amber-500 w-[42%]" />
-                                </div>
-                            </div>
-                            <div>
-                                <div className="flex justify-between text-sm mb-1">
-                                    <span className="text-light-text-secondary dark:text-dark-text-secondary">Credit Utilization</span>
-                                    <span className="font-medium text-green-600">25%</span>
-                                </div>
-                                <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                                    <div className="h-full bg-green-500 w-[25%]" />
-                                </div>
-                            </div>
-                            <p className="text-xs text-slate-500 mt-2">
-                                DTI is slightly higher than recommended (40%). Review other debt obligations carefully.
-                            </p>
-                        </div>
-                    </Card>
-
-                    <Card className="p-6">
-                        <h3 className="text-lg font-semibold mb-4 text-light-text-primary dark:text-dark-text-primary">Documents</h3>
-                        <div className="space-y-3">
-                            {['ID Proof.pdf', 'Income Statement.pdf', 'Bank Returns (3 months).pdf'].map((doc, i) => (
-                                <div key={i} className="flex items-center justify-between p-2 border border-light-border dark:border-dark-border rounded hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer">
-                                    <div className="flex items-center gap-2">
-                                        <FileText className="w-4 h-4 text-slate-400" />
-                                        <span className="text-sm font-medium text-light-text-primary dark:text-dark-text-primary">{doc}</span>
+                            {['Bank Statement - Last 6 Months.pdf', 'Employment Letter.pdf', 'Identity Proof.pdf', 'Address Proof.pdf'].map((doc, idx) => (
+                                <div key={idx} className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-md">
+                                    <div className="flex items-center gap-3">
+                                        <FileText className="w-5 h-5 text-gray-400" />
+                                        <span className="text-sm text-gray-700 dark:text-gray-300">{doc}</span>
                                     </div>
-                                    <Button variant="ghost" size="sm">View</Button>
+                                    <Button variant="outline" size="sm" leftIcon={<Download className="w-4 h-4" />}>
+                                        Download
+                                    </Button>
                                 </div>
                             ))}
                         </div>
                     </Card>
+                </div>
+
+                {/* Sidebar - Right Column (1/3) */}
+                <div className="space-y-6">
+
+                    {/* Risk Assessment */}
+                    <Card className="p-6">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-base font-medium text-gray-700 dark:text-gray-200">Risk Assessment</h2>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-xs h-8"
+                                onClick={() => navigate(`/officer/application/${id}/risk`)}
+                            >
+                                View Detailed Analysis
+                            </Button>
+                        </div>
+
+                        <div className="bg-gray-200 dark:bg-gray-800 p-6 rounded-md text-center mb-6">
+                            <p className="text-sm text-gray-500 mb-1">Risk Score</p>
+                            <p className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-1">LOW</p>
+                            <p className="text-sm text-gray-500">15%</p>
+                        </div>
+
+                        <div>
+                            <p className="text-sm text-gray-500 mb-3">Key Factors:</p>
+                            <div className="space-y-3">
+                                <div className="p-3 border border-gray-200 dark:border-gray-700 rounded text-sm text-gray-600 dark:text-gray-300 bg-white dark:bg-dark-surface">
+                                    Good Credit Score
+                                </div>
+                                <div className="p-3 border border-gray-200 dark:border-gray-700 rounded text-sm text-gray-600 dark:text-gray-300 bg-white dark:bg-dark-surface">
+                                    Stable Employment
+                                </div>
+                                <div className="p-3 border border-gray-200 dark:border-gray-700 rounded text-sm text-gray-600 dark:text-gray-300 bg-white dark:bg-dark-surface">
+                                    Low Debt-to-Income
+                                </div>
+                            </div>
+                        </div>
+                    </Card>
+
+                    {/* Decision */}
+                    <Card className="p-6">
+                        <h2 className="text-base font-medium text-gray-700 dark:text-gray-200 mb-4">Decision</h2>
+                        <div className="space-y-3">
+                            <button className="w-full flex items-center justify-center gap-2 bg-gray-900 hover:bg-gray-800 text-white py-3 px-4 rounded-md transition-colors text-sm font-medium">
+                                <CheckCircle className="w-4 h-4" />
+                                Approve Application
+                            </button>
+                            <button className="w-full flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 py-3 px-4 rounded-md transition-colors text-sm font-medium">
+                                <XCircle className="w-4 h-4" />
+                                Reject Application
+                            </button>
+                            <button className="w-full flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 py-3 px-4 rounded-md transition-colors text-sm font-medium">
+                                Request More Info
+                            </button>
+                        </div>
+                    </Card>
+
+                    {/* Timeline */}
+                    <Card className="p-6">
+                        <h2 className="text-base font-medium text-gray-700 dark:text-gray-200 mb-4">Timeline</h2>
+                        <div className="relative pl-4 border-l border-gray-200 dark:border-gray-700 space-y-6">
+                            <div className="relative">
+                                {/* Dot for current item could be filled, but design implies a clean look */}
+                                <div className="mb-1">
+                                    <p className="text-xs text-gray-500">Nov 22, 2025</p>
+                                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Application Submitted</p>
+                                </div>
+                            </div>
+                            <div className="relative">
+                                <div className="mb-1">
+                                    <p className="text-xs text-gray-500">Nov 22, 2025</p>
+                                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Documents Verified</p>
+                                </div>
+                            </div>
+                            <div className="relative">
+                                <div className="mb-1">
+                                    <p className="text-xs text-gray-500">Nov 23, 2025</p>
+                                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Under Review</p>
+                                </div>
+                            </div>
+                        </div>
+                    </Card>
+
                 </div>
             </div>
         </div>

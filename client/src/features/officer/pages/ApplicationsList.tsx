@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -13,6 +14,7 @@ const applications = [
 ];
 
 export const ApplicationsList = () => {
+    const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
 
     const getStatusBadge = (status: string) => {
@@ -79,7 +81,12 @@ export const ApplicationsList = () => {
                                         </Badge>
                                     </td>
                                     <td className="px-4 py-3">
-                                        <Button size="sm" variant="ghost" rightIcon={<ChevronRight className="w-4 h-4" />}>
+                                        <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            rightIcon={<ChevronRight className="w-4 h-4" />}
+                                            onClick={() => navigate(`/officer/application/${app.id}`)}
+                                        >
                                             View
                                         </Button>
                                     </td>
