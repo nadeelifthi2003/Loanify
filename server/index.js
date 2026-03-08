@@ -1,8 +1,17 @@
 const express = require('express');
 const cors = require('cors');
+const mongoose = require('mongoose');
+require('dotenv').config();
+
+const Application = require('./models/Application');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Connect to MongoDB
+mongoose.connect(process.env.MONGO_URI)
+    .then(() => console.log('Successfully connected to MongoDB'))
+    .catch(err => console.error('MongoDB connection error:', err));
 
 app.use(cors());
 app.use(express.json());
@@ -75,43 +84,44 @@ app.post('/api/calculate-emi', (req, res) => {
     });
 });
 
-// Mock Database
-const applications = [];
-
 /*
  * API Endpoint: Submit Loan Application
  * Method: POST
  * Body: { ...applicationData }
  * Response: { status: 'success', applicationId: string, message: string }
  */
-app.post('/api/applications', (req, res) => {
-    const applicationData = req.body;
+app.post('/api/applications', async (req, res) => {
+    try {
+        const applicationData = req.body;
 
-    // Log Received Data
-    console.log('Received Loan Application:', applicationData);
+        // Log Received Data
+        console.log('Received Loan Application:', applicationData);
 
-    // Simple Validation
-    if (!applicationData.nic || !applicationData.loanAmount) {
-        return res.status(400).json({ status: 'error', message: 'Missing required fields' });
+        // Simple Validation
+        if (!applicationData.nic || !applicationData.loanAmount) {
+            return res.status(400).json({ status: 'error', message: 'Missing required fields' });
+        }
+
+        // Mock Application ID Generation (could be replaced with a robust auto-increment/UUID approach)
+        const applicationId = `L-${Math.floor(1000 + Math.random() * 9000)}`;
+
+        const newApplication = new Application({
+            id: applicationId,
+            status: 'Pending',
+            ...applicationData
+        });
+
+        await newApplication.save();
+
+        res.status(201).json({
+            status: 'success',
+            applicationId: applicationId,
+            message: 'Application submitted successfully!'
+        });
+    } catch (error) {
+        console.error('Error saving application:', error);
+        res.status(500).json({ status: 'error', message: 'Failed to submit application', error: error.message });
     }
-
-    // Mock Application ID Generation
-    const applicationId = `L-${Math.floor(1000 + Math.random() * 9000)}`;
-
-    const newApplication = {
-        id: applicationId,
-        status: 'Pending',
-        date: new Date().toISOString().split('T')[0],
-        ...applicationData
-    };
-
-    applications.push(newApplication);
-
-    res.json({
-        status: 'success',
-        applicationId: applicationId,
-        message: 'Application submitted successfully!'
-    });
 });
 
 /*
@@ -119,10 +129,16 @@ app.post('/api/applications', (req, res) => {
  * Method: GET
  * Response: Array of applications
  */
-app.get('/api/applications/my-applications', (req, res) => {
-    // In a real app, filtering by user ID would happen here
-    // For now, return all (mocking a single user session)
-    res.json(applications);
+app.get('/api/applications/my-applications', async (req, res) => {
+    try {
+        // In a real app, you would filter by a User ID or Token
+        // For now, we return all to mimic a single user session
+        const applications = await Application.find({}).sort({ date: -1 });
+        res.json(applications);
+    } catch (error) {
+        console.error('Error fetching applications:', error);
+        res.status(500).json({ status: 'error', message: 'Failed to fetch applications', error: error.message });
+    }
 });
 
 app.listen(PORT, () => {
