@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { ChevronRight, Check, AlertCircle, ArrowLeft } from 'lucide-react';
+import { ChevronRight, Check, AlertCircle, ArrowLeft, X, Upload, FileText } from 'lucide-react';
 
 const steps = ['Personal Info', 'Loan Details', 'Documents', 'Review'];
 
@@ -31,6 +31,15 @@ export const LoanApplication = () => {
         loanCurrency: 'LKR',
         loanPurpose: '',
         loanTerm: ''
+    });
+    const [documents, setDocuments] = useState<{
+        proofOfIncome: File[];
+        idProof: File[];
+        proofOfAddress: File | null;
+    }>({
+        proofOfIncome: [],
+        idProof: [],
+        proofOfAddress: null
     });
     const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -88,6 +97,12 @@ export const LoanApplication = () => {
             if (!formData.loanTerm || Number(formData.loanTerm) <= 0) newErrors.loanTerm = 'Valid Term is required';
         }
 
+        if (step === 2) {
+            if (documents.proofOfIncome.length === 0) {
+                newErrors.proofOfIncome = 'At least one Proof of Income document is required (pay slips / bank statements)';
+            }
+        }
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -107,22 +122,57 @@ export const LoanApplication = () => {
     const submitApplication = async () => {
         setIsSubmitting(true);
         try {
-            const response = await fetch('http://localhost:5000/api/applications', {
+            // 1. Submit application to MongoDB (existing flow)
+            const appResponse = await fetch('http://localhost:5000/api/applications', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData)
             });
-            const data = await response.json();
+            const appData = await appResponse.json();
 
-            if (data.status === 'success') {
-                showToast(`Application Submitted Successfully! ID: ${data.applicationId}`, "success");
-                navigate('/customer');
+            if (appData.status !== 'success') {
+                showToast('Submission Failed: ' + appData.message, 'error');
+                return;
+            }
+
+            // 2. Call Python eligibility engine with form data + document flag
+            const eligibilityPayload = {
+                firstName: formData.firstName,
+                lastName: formData.lastName,
+                annualIncome: parseFloat(formData.annualIncome) || 0,
+                employmentStatus: formData.employmentStatus,
+                loanAmount: parseFloat(formData.loanAmount) || 0,
+                loanTerm: parseInt(formData.loanTerm) || 12,
+                loanPurpose: formData.loanPurpose,
+                dependents: 0,
+                existingLoanCommitments: 0,
+                incomeVerified: documents.proofOfIncome.length > 0   // true if proof-of-income uploaded
+            };
+
+            const eligResponse = await fetch('http://localhost:5000/api/eligibility', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(eligibilityPayload)
+            });
+            const eligData = await eligResponse.json();
+
+            showToast(`Application Submitted! ID: ${appData.applicationId}`, 'success');
+
+            // 3. Navigate to the eligibility result page, passing the result via state
+            if (eligData.status === 'success') {
+                navigate('/customer/eligibility-result', {
+                    state: {
+                        result: eligData.data,
+                        applicationId: appData.applicationId,
+                        applicantName: `${formData.firstName} ${formData.lastName}`
+                    }
+                });
             } else {
-                showToast('Submission Failed: ' + data.message, "error");
+                navigate('/customer');
             }
         } catch (error) {
             console.error('Error submitting application:', error);
-            showToast('Error submitting application. Please try again.', "error");
+            showToast('Error submitting application. Please try again.', 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -336,18 +386,165 @@ export const LoanApplication = () => {
                 )}
 
                 {currentStep === 2 && (
-                    <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
-                        <h3 className="text-lg font-semibold text-light-text-primary dark:text-dark-text-primary mb-4">Document Upload</h3>
-                        <div className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-8 text-center hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer">
-                            <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3 text-primary">
-                                <Check className="w-6 h-6" /> {/* Placeholder icon */}
-                            </div>
-                            <p className="text-sm font-medium text-light-text-primary dark:text-dark-text-primary">
-                                Click to upload ID Proof
-                            </p>
-                            <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary mt-1">
-                                PDF, JPG or PNG (Max 5MB)
-                            </p>
+                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                        <div>
+                            <h3 className="text-lg font-semibold text-light-text-primary dark:text-dark-text-primary">Document Upload</h3>
+                            <p className="text-sm text-gray-500 mt-1">Upload the necessary documents. Our AI Risk Engine uses your proof of income to verify your debt-to-income ratio.</p>
+                        </div>
+
+                        {/* Proof of Income - Mandatory, multi-file */}
+                        <div className={`border-2 border-dashed rounded-lg transition-colors relative ${
+                            errors.proofOfIncome
+                                ? 'border-red-400 bg-red-50 dark:bg-red-900/10'
+                                : documents.proofOfIncome.length > 0
+                                ? 'border-green-400 bg-green-50 dark:bg-green-900/10'
+                                : 'border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                        }`}>
+
+                            {/* Dropzone header - always visible */}
+                            <label className="flex flex-col items-center gap-2 p-5 cursor-pointer">
+                                <input
+                                    type="file"
+                                    multiple
+                                    className="sr-only"
+                                    accept=".pdf,.jpg,.jpeg,.png"
+                                    onChange={(e) => {
+                                        const picked = Array.from(e.target.files || []);
+                                        // Merge new files, avoid exact-name duplicates
+                                        setDocuments(d => ({
+                                            ...d,
+                                            proofOfIncome: [
+                                                ...d.proofOfIncome,
+                                                ...picked.filter(f => !d.proofOfIncome.some(ex => ex.name === f.name))
+                                            ]
+                                        }));
+                                        e.target.value = ''; // reset so same file can be re-added after removal
+                                    }}
+                                />
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                                    documents.proofOfIncome.length > 0 ? 'bg-green-100 text-green-600' : 'bg-primary/10 text-primary'
+                                }`}>
+                                    <Upload className="w-5 h-5" />
+                                </div>
+                                <div className="text-center">
+                                    <p className="text-sm font-medium text-light-text-primary dark:text-dark-text-primary">
+                                        <span className="text-red-500 font-semibold">* </span>
+                                        {documents.proofOfIncome.length > 0 ? 'Add More Pay Slips / Statements' : 'Upload Proof of Income'}
+                                    </p>
+                                    <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary mt-0.5">
+                                        Pay Slips or Bank Statements &bull; PDF / JPG / PNG (max 5MB each) &bull; Multiple allowed
+                                    </p>
+                                </div>
+                            </label>
+
+                            {/* Uploaded file list */}
+                            {documents.proofOfIncome.length > 0 && (
+                                <div className="border-t border-green-200 dark:border-green-800 px-4 pb-4 pt-3 space-y-2">
+                                    {documents.proofOfIncome.map((file, idx) => (
+                                        <div key={`${file.name}-${idx}`} className="flex items-center gap-3 bg-white dark:bg-gray-900 p-2.5 rounded-lg border border-green-200 dark:border-green-800">
+                                            <div className="p-1.5 bg-green-100 dark:bg-green-900/40 rounded flex-shrink-0">
+                                                <FileText className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-xs font-semibold text-green-700 dark:text-green-300 truncate">{file.name}</p>
+                                                <p className="text-xs text-green-600/60 dark:text-green-400/60">{(file.size / 1024).toFixed(1)} KB</p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => setDocuments(d => ({
+                                                    ...d,
+                                                    proofOfIncome: d.proofOfIncome.filter((_, i) => i !== idx)
+                                                }))}
+                                                className="p-1 rounded-full bg-red-100 hover:bg-red-200 dark:bg-red-900/40 dark:hover:bg-red-800/60 text-red-500 transition-colors flex-shrink-0"
+                                                title="Remove this file"
+                                            >
+                                                <X className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                    <p className="text-xs text-green-600 dark:text-green-400 font-medium pt-1">
+                                        {documents.proofOfIncome.length} file{documents.proofOfIncome.length > 1 ? 's' : ''} attached
+                                    </p>
+                                </div>
+                            )}
+
+                            {errors.proofOfIncome && (
+                                <p className="text-xs text-red-500 px-5 pb-3 font-medium">{errors.proofOfIncome}</p>
+                            )}
+                        </div>
+
+                        {/* ID Proof - Optional, multi-file */}
+                        <div className={`border-2 border-dashed rounded-lg transition-colors relative ${
+                            documents.idProof.length > 0
+                                ? 'border-green-400 bg-green-50 dark:bg-green-900/10'
+                                : 'border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                        }`}>
+
+                            {/* Dropzone header - always visible */}
+                            <label className="flex flex-col items-center gap-2 p-5 cursor-pointer">
+                                <input
+                                    type="file"
+                                    multiple
+                                    className="sr-only"
+                                    accept=".pdf,.jpg,.jpeg,.png"
+                                    onChange={(e) => {
+                                        const picked = Array.from(e.target.files || []);
+                                        setDocuments(d => ({
+                                            ...d,
+                                            idProof: [
+                                                ...d.idProof,
+                                                ...picked.filter(f => !d.idProof.some(ex => ex.name === f.name))
+                                            ]
+                                        }));
+                                        e.target.value = '';
+                                    }}
+                                />
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                                    documents.idProof.length > 0 ? 'bg-green-100 text-green-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
+                                }`}>
+                                    <Upload className="w-5 h-5" />
+                                </div>
+                                <div className="text-center">
+                                    <p className="text-sm font-medium text-light-text-primary dark:text-dark-text-primary">
+                                        {documents.idProof.length > 0 ? 'Add More ID Documents' : 'Upload ID Proof'}
+                                        {' '}<span className="text-xs text-gray-400 font-normal">(Optional)</span>
+                                    </p>
+                                    <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary mt-0.5">
+                                        National ID or Passport &bull; PDF / JPG / PNG (max 5MB each) &bull; Multiple allowed
+                                    </p>
+                                </div>
+                            </label>
+
+                            {/* Uploaded file list */}
+                            {documents.idProof.length > 0 && (
+                                <div className="border-t border-green-200 dark:border-green-800 px-4 pb-4 pt-3 space-y-2">
+                                    {documents.idProof.map((file, idx) => (
+                                        <div key={`${file.name}-${idx}`} className="flex items-center gap-3 bg-white dark:bg-gray-900 p-2.5 rounded-lg border border-green-200 dark:border-green-800">
+                                            <div className="p-1.5 bg-green-100 dark:bg-green-900/40 rounded flex-shrink-0">
+                                                <FileText className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-xs font-semibold text-green-700 dark:text-green-300 truncate">{file.name}</p>
+                                                <p className="text-xs text-green-600/60 dark:text-green-400/60">{(file.size / 1024).toFixed(1)} KB</p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => setDocuments(d => ({
+                                                    ...d,
+                                                    idProof: d.idProof.filter((_, i) => i !== idx)
+                                                }))}
+                                                className="p-1 rounded-full bg-red-100 hover:bg-red-200 dark:bg-red-900/40 dark:hover:bg-red-800/60 text-red-500 transition-colors flex-shrink-0"
+                                                title="Remove this file"
+                                            >
+                                                <X className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                    <p className="text-xs text-green-600 dark:text-green-400 font-medium pt-1">
+                                        {documents.idProof.length} file{documents.idProof.length > 1 ? 's' : ''} attached
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}

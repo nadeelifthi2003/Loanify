@@ -5,47 +5,87 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ArrowLeft, Bell, Lock, User, Moon, Sun, Shield } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useToast } from '@/components/ui/Toast';
 
 export const OfficerSettings = () => {
     const navigate = useNavigate();
     const { theme, toggleTheme } = useTheme();
+    const { showToast } = useToast();
     const [activeTab, setActiveTab] = useState('profile');
 
-    const [formData, setFormData] = useState({
-        fullName: 'Officer Smith',
-        email: 'officer.smith@loanify.bank',
-        phone: '+1 234 567 8999',
-        employeeId: 'EMP-2023-001',
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
+    const [formData, setFormData] = useState(() => {
+        const saved = localStorage.getItem('officer_formData');
+        return saved ? JSON.parse(saved) : {
+            fullName: 'Officer Smith',
+            email: 'officer.smith@loanify.bank',
+            phone: '+1 234 567 8999',
+            employeeId: 'EMP-2023-001',
+            currentPassword: '',
+            newPassword: '',
+            confirmPassword: ''
+        };
     });
 
-    const [notifications, setNotifications] = useState({
-        newApplication: true,
-        riskAlerts: true,
-        dailySummary: false,
-        emailDigests: true
+    const [notifications, setNotifications] = useState(() => {
+        const saved = localStorage.getItem('officer_notifications');
+        return saved ? JSON.parse(saved) : {
+            newApplication: true,
+            riskAlerts: true,
+            dailySummary: false,
+            emailDigests: true
+        };
     });
 
-    const [security] = useState({
-        twoFactor: true,
-        sessionTimeout: '30m'
+    const [security, setSecurity] = useState(() => {
+        const saved = localStorage.getItem('officer_security');
+        return saved ? JSON.parse(saved) : {
+            twoFactor: true,
+            sessionTimeout: '30m'
+        };
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
+        setFormData((prev: typeof formData) => ({
             ...prev,
             [name]: value
         }));
     };
 
     const toggleNotification = (key: keyof typeof notifications) => {
-        setNotifications(prev => ({
+        setNotifications((prev: typeof notifications) => ({
             ...prev,
             [key]: !prev[key]
         }));
+    };
+
+    const saveProfile = () => {
+        localStorage.setItem('officer_formData', JSON.stringify(formData));
+        showToast('Profile information saved successfully', 'success');
+    };
+
+    const savePreferences = () => {
+        localStorage.setItem('officer_notifications', JSON.stringify(notifications));
+        showToast('Notification preferences updated', 'success');
+    };
+
+    const updatePassword = () => {
+        if (!formData.currentPassword || !formData.newPassword) {
+            showToast('Please fill all password fields', 'error');
+            return;
+        }
+        showToast('Password updated securely', 'success');
+        setFormData((prev: typeof formData) => ({ ...prev, currentPassword: '', newPassword: '', confirmPassword: '' }));
+    };
+
+    const toggleTwoFactor = () => {
+        const newValue = !security.twoFactor;
+        setSecurity((prev: typeof security) => {
+            const next = { ...prev, twoFactor: newValue };
+            localStorage.setItem('officer_security', JSON.stringify(next));
+            return next;
+        });
+        showToast(newValue ? 'Two-Factor Authentication enabled' : 'Two-Factor Authentication disabled', 'info');
     };
 
     return (
@@ -112,7 +152,7 @@ export const OfficerSettings = () => {
                                     OS
                                 </div>
                                 <div>
-                                    <Button variant="outline" size="sm" className="mb-2">Change Avatar</Button>
+                                    <Button variant="outline" size="sm" className="mb-2" onClick={() => showToast('Avatar upload simulated', 'info')}>Change Avatar</Button>
                                     <p className="text-xs text-gray-500">JPG, GIF or PNG. Max size of 800K</p>
                                 </div>
                             </div>
@@ -144,7 +184,7 @@ export const OfficerSettings = () => {
                                 />
                             </div>
                             <div className="pt-4 flex justify-end">
-                                <Button>Save Changes</Button>
+                                <Button onClick={saveProfile}>Save Changes</Button>
                             </div>
 
                             <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
@@ -195,7 +235,7 @@ export const OfficerSettings = () => {
                                 ))}
                             </div>
                             <div className="pt-4 flex justify-end">
-                                <Button>Save Preferences</Button>
+                                <Button onClick={savePreferences}>Save Preferences</Button>
                             </div>
                         </Card>
                     )}
@@ -232,7 +272,7 @@ export const OfficerSettings = () => {
                                     />
                                 </div>
                                 <div className="flex justify-end">
-                                    <Button variant="outline" size="sm">Update Password</Button>
+                                    <Button variant="outline" size="sm" onClick={updatePassword}>Update Password</Button>
                                 </div>
                             </div>
 
@@ -248,7 +288,7 @@ export const OfficerSettings = () => {
                                             <p className="text-xs text-gray-500 mt-1">Add an extra layer of security to your account by requiring a code when logging in.</p>
                                         </div>
                                     </div>
-                                    <Button size="sm" variant={security.twoFactor ? 'danger' : 'outline'}>
+                                    <Button size="sm" variant={security.twoFactor ? 'danger' : 'outline'} onClick={toggleTwoFactor}>
                                         {security.twoFactor ? 'Disable' : 'Enable'}
                                     </Button>
                                 </div>

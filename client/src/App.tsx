@@ -11,9 +11,10 @@ import { MyLoans } from '@/features/customer/pages/MyLoans';
 import { LoanApplication } from '@/features/customer/pages/LoanApplication';
 import { EMICalculator } from '@/features/customer/pages/EMICalculator';
 import { Settings } from '@/features/customer/pages/Settings';
+import { RiskResult } from '@/features/customer/pages/RiskResult';
+import { EligibilityResult } from '@/features/customer/pages/EligibilityResult';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { ToastProvider } from './components/ui/Toast';
-
+import { ToastProvider } from './components/ui/Toast'
 import { OfficerDashboard } from '@/features/officer/pages/OfficerDashboard';
 import { ApplicationsList } from '@/features/officer/pages/ApplicationsList';
 import { ApplicationVerification } from '@/features/officer/pages/ApplicationVerification';
@@ -46,6 +47,8 @@ function App() {
                 <Route index element={<CustomerDashboard />} />
                 <Route path="loans" element={<MyLoans />} />
                 <Route path="apply" element={<LoanApplication />} />
+                <Route path="application/:id/risk" element={<RiskResult />} />
+                <Route path="eligibility-result" element={<EligibilityResult />} />
                 <Route path="calculator" element={<EMICalculator />} />
                 <Route path="settings" element={<Settings />} />
               </Route>

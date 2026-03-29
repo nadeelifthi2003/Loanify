@@ -1,27 +1,39 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Search, Filter, Download, MoreVertical, Users, UserPlus, Phone, Mail } from 'lucide-react';
-
-const customers = [
-    { id: 'C-1001', name: 'Sarah Johnson', email: 'sarah.j@example.com', phone: '+1 234 567 8901', joinDate: '2024-01-15', activeLoans: 1, totalDebt: 15000, status: 'active' },
-    { id: 'C-1002', name: 'Michael Chen', email: 'm.chen@example.com', phone: '+1 234 567 8902', joinDate: '2023-11-20', activeLoans: 2, totalDebt: 450000, status: 'active' },
-    { id: 'C-1003', name: 'Emma Wilson', email: 'emma.w@example.com', phone: '+1 234 567 8903', joinDate: '2024-02-01', activeLoans: 0, totalDebt: 0, status: 'inactive' },
-    { id: 'C-1004', name: 'James Rodri', email: 'j.rodri@example.com', phone: '+1 234 567 8904', joinDate: '2023-08-10', activeLoans: 1, totalDebt: 25000, status: 'active' },
-    { id: 'C-1005', name: 'Lisa Pat', email: 'lisa.p@example.com', phone: '+1 234 567 8905', joinDate: '2024-03-05', activeLoans: 0, totalDebt: 0, status: 'blocked' },
-];
+import { Search, Filter, Download, MoreVertical, Users, UserPlus, Phone, Mail, Loader2 } from 'lucide-react';
+import { useToast } from '@/components/ui/Toast';
 
 export const CustomersList = () => {
-    // const navigate = useNavigate();
+    const { showToast } = useToast();
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
+    
+    const [customers, setCustomers] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchCustomers = async () => {
+            try {
+                const res = await fetch('http://localhost:5000/api/officer/customers');
+                if (res.ok) {
+                    setCustomers(await res.json());
+                }
+            } catch (error) {
+                console.error('Error fetching customers:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchCustomers();
+    }, []);
 
     const filteredCustomers = customers.filter(customer => {
-        const matchesSearch = customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            customer.id.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSearch = customer.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            customer.id?.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = statusFilter === 'all' || customer.status === statusFilter;
         return matchesSearch && matchesStatus;
     });
@@ -35,16 +47,42 @@ export const CustomersList = () => {
         }
     };
 
+    const exportToCSV = () => {
+        if (filteredCustomers.length === 0) {
+            showToast('No data to export', 'warning');
+            return;
+        }
+        const headers = ['Customer ID,Name,Email,Phone,Joined Date,Active Loans,Total Debt,Status'];
+        const csvData = headers.concat(filteredCustomers.map(c => 
+            `${c.id},"${c.name}",${c.email},${c.phone},${new Date(c.joinDate).toLocaleDateString()},${c.activeLoans},${c.totalDebt},${c.status}`
+        )).join('\n');
+        
+        const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', 'customers_list.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showToast('Customers exported successfully', 'success');
+    };
+
+    if (loading) return <div className="p-8 text-center text-gray-500 flex justify-center items-center gap-2"><Loader2 className="animate-spin w-5 h-5"/> Fetching customers data...</div>;
+
+    const totalCustomers = customers.length;
+    const activeBorrowers = customers.filter(c => c.activeLoans > 0).length;
+
     return (
         <div className="space-y-6 animate-fade-in text-light-text-primary dark:text-dark-text-primary">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Customer Management</h1>
-                    <p className="text-sm text-gray-500 mt-1">View and manage bank customers</p>
+                    <h1 className="text-2xl font-bold">Customer Management</h1>
+                    <p className="text-sm text-gray-500 mt-1">View and manage bank aggregated customers</p>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outline" leftIcon={<Download className="w-4 h-4" />}>Export</Button>
-                    <Button leftIcon={<UserPlus className="w-4 h-4" />}>Add Customer</Button>
+                    <Button variant="outline" leftIcon={<Download className="w-4 h-4" />} onClick={exportToCSV}>Export</Button>
+                    <Button leftIcon={<UserPlus className="w-4 h-4" />} onClick={() => showToast('Add customer modal conceptually triggered', 'info')}>Add Customer</Button>
                 </div>
             </div>
 
@@ -55,8 +93,8 @@ export const CustomersList = () => {
                         <Users className="w-6 h-6" />
                     </div>
                     <div>
-                        <p className="text-sm text-gray-500">Total Customers</p>
-                        <p className="text-2xl font-bold text-gray-800 dark:text-white">1,204</p>
+                        <p className="text-sm text-gray-500">Total Unique Profiles</p>
+                        <p className="text-2xl font-bold">{totalCustomers}</p>
                     </div>
                 </Card>
                 <Card className="p-4 flex items-center gap-4">
@@ -65,7 +103,7 @@ export const CustomersList = () => {
                     </div>
                     <div>
                         <p className="text-sm text-gray-500">New This Month</p>
-                        <p className="text-2xl font-bold text-gray-800 dark:text-white">+45</p>
+                        <p className="text-2xl font-bold">+{totalCustomers}</p>
                     </div>
                 </Card>
                 <Card className="p-4 flex items-center gap-4">
@@ -74,7 +112,7 @@ export const CustomersList = () => {
                     </div>
                     <div>
                         <p className="text-sm text-gray-500">Active Borrowers</p>
-                        <p className="text-2xl font-bold text-gray-800 dark:text-white">892</p>
+                        <p className="text-2xl font-bold">{activeBorrowers}</p>
                     </div>
                 </Card>
             </div>
@@ -101,7 +139,7 @@ export const CustomersList = () => {
                             <option value="inactive">Inactive</option>
                             <option value="blocked">Blocked</option>
                         </select>
-                        <Button variant="outline" leftIcon={<Filter className="w-4 h-4" />}>More Filters</Button>
+                        <Button variant="outline" leftIcon={<Filter className="w-4 h-4" />} onClick={() => showToast('More filters coming soon', 'info')}>More Filters</Button>
                     </div>
                 </div>
 
@@ -113,7 +151,7 @@ export const CustomersList = () => {
                                 <th className="px-4 py-3 rounded-l-lg">Customer</th>
                                 <th className="px-4 py-3">Contact Info</th>
                                 <th className="px-4 py-3">Joined Date</th>
-                                <th className="px-4 py-3">Active Loans</th>
+                                <th className="px-4 py-3 text-center">Active Loans</th>
                                 <th className="px-4 py-3">Total Debt</th>
                                 <th className="px-4 py-3">Status</th>
                                 <th className="px-4 py-3 rounded-r-lg text-right">Actions</th>
@@ -125,7 +163,7 @@ export const CustomersList = () => {
                                     <td className="px-4 py-3">
                                         <div className="flex items-center gap-3">
                                             <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
-                                                {customer.name.split(' ').map(n => n[0]).join('')}
+                                                {customer.name?.split(' ').map((n: string) => n[0]).join('').substring(0, 2)}
                                             </div>
                                             <div>
                                                 <p className="font-medium text-gray-900 dark:text-white">{customer.name}</p>
@@ -152,7 +190,7 @@ export const CustomersList = () => {
                                         {customer.activeLoans}
                                     </td>
                                     <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
-                                        ${customer.totalDebt.toLocaleString()}
+                                        ${customer.totalDebt?.toLocaleString() || 0}
                                     </td>
                                     <td className="px-4 py-3">
                                         <Badge variant={getStatusBadge(customer.status)} size="sm" className="capitalize">
@@ -160,12 +198,19 @@ export const CustomersList = () => {
                                         </Badge>
                                     </td>
                                     <td className="px-4 py-3 text-right">
-                                        <Button variant="ghost" size="sm">
+                                        <Button variant="ghost" size="sm" onClick={() => showToast(`Action menu opened for ${customer.name}`, 'info')}>
                                             <MoreVertical className="w-4 h-4 text-gray-500" />
                                         </Button>
                                     </td>
                                 </tr>
                             ))}
+                            {filteredCustomers.length === 0 && (
+                                <tr>
+                                    <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                                        No linked customer profiles match your search.
+                                    </td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                 </div>
