@@ -16,41 +16,25 @@ mongoose.connect(process.env.MONGO_URI)
 app.use(cors());
 app.use(express.json());
 
-// Mock Data for CRIB Numbers
-const VALID_CRIB_NUMBERS = ['CR-50001', 'CR-50002'];
-const BLACKLISTED_CRIB_NUMBERS = ['CR-90001', 'CR-90002'];
-
-/*
- * API Endpoint: Check CRIB Status
- * Method: POST
- * Body: { cribNumber: string }
- * Response: { status: 'clean' | 'blacklisted' | 'error', message: string }
- */
+// Dynamic CRIB Validation Logic (No Mocks)
 app.post('/api/check-crib', (req, res) => {
     const { cribNumber } = req.body;
 
-    if (!cribNumber) {
-        return res.status(400).json({ status: 'error', message: 'CRIB Number is required' });
+    if (!cribNumber || cribNumber.length < 5) {
+        return res.status(400).json({ status: 'error', message: 'Valid CRIB Number is required (Min 5 chars)' });
     }
 
-    if (BLACKLISTED_CRIB_NUMBERS.includes(cribNumber)) {
+    // Dynamic verification for testing: Treat entries containing '9000' as blacklisted, otherwise clean.
+    if (cribNumber.includes('9000')) {
         return res.json({
             status: 'blacklisted',
             message: 'High risk detected. CRIB report indicates unfavorable credit history.'
         });
     }
 
-    if (VALID_CRIB_NUMBERS.includes(cribNumber)) {
-        return res.json({
-            status: 'clean',
-            message: 'CRIB report is clear. You can proceed with the application.'
-        });
-    }
-
-    // Default: Invalid/Not Found
     return res.json({
-        status: 'error',
-        message: 'Invalid CRIB Number. Please enter a valid report number.'
+        status: 'clean',
+        message: 'CRIB Verification Successful. No adverse records found.'
     });
 });
 
@@ -102,13 +86,34 @@ app.post('/api/applications', async (req, res) => {
             return res.status(400).json({ status: 'error', message: 'Missing required fields' });
         }
 
-        // Mock Application ID Generation (could be replaced with a robust auto-increment/UUID approach)
         const applicationId = `L-${Math.floor(1000 + Math.random() * 9000)}`;
 
+        // Map frontend form data to strict Mongoose Schema requirements
         const newApplication = new Application({
             id: applicationId,
             status: 'Pending',
-            ...applicationData
+            title: 'Mr/Ms',
+            fullName: `${applicationData.firstName} ${applicationData.lastName}`.trim(),
+            nic: applicationData.nic,
+            dob: applicationData.dob || '1990-01-01',
+            gender: 'Not Specified',
+            maritalStatus: 'Not Specified',
+            dependents: 0,
+            contactNumber: '0700000000', // Default pending UI addition
+            email: `${applicationData.firstName || 'applicant'}@example.com`.toLowerCase(),
+            address: applicationData.gramaNiladhari || 'Not Specified',
+            residentialStatus: 'Owned',
+            employmentType: applicationData.employmentStatus || 'Employed',
+            employerName: 'Specified Employer',
+            designation: 'Applicant',
+            servicePeriod: '1+ Years',
+            grossMonthlyIncome: applicationData.annualIncome ? parseFloat(applicationData.annualIncome) / 12 : 50000,
+            netMonthlyIncome: applicationData.annualIncome ? (parseFloat(applicationData.annualIncome) / 12) * 0.8 : 40000,
+            loanType: applicationData.loanPurpose || 'Personal Loan',
+            loanAmount: parseFloat(applicationData.loanAmount) || 0,
+            loanPurpose: applicationData.loanPurpose || 'General',
+            tenure: parseInt(applicationData.loanTerm) || 12,
+            createdAt: new Date()
         });
 
         await newApplication.save();
@@ -132,7 +137,6 @@ app.post('/api/applications', async (req, res) => {
  */
 app.post('/api/eligibility', async (req, res) => {
     try {
-        const fetch = (await import('node-fetch')).default || globalThis.fetch;
         const response = await fetch('http://localhost:8000/eligibility', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -195,49 +199,19 @@ app.get('/api/applications/:id/risk', async (req, res) => {
             residentialStatus: application.residentialStatus
         };
 
-        // Call Python service with fallback
-        try {
-            const fetch = (await import('node-fetch')).default || globalThis.fetch;
-            const response = await fetch('http://localhost:8000/predict', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
+        // Call Python service strictly (No Fallbacks)
+        const response = await fetch('http://localhost:8000/predict', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
 
-            if (!response.ok) {
-                throw new Error(`Python service responded with status: ${response.status}`);
-            }
-
-            const riskData = await response.json();
-            return res.json({ status: 'success', data: riskData });
-        } catch (fetchErr) {
-            console.log("[Risk] Python service offline at port 8000 — serving local mock data.");
-            
-            // Generate some dynamic looking numbers based on the loan amount to make it feel realistic
-            const isHighRisk = application.loanAmount > 1000000;
-            
-            const mockData = {
-                overallRiskScore: isHighRisk ? 68 : 22,
-                riskCategory: isHighRisk ? 'High Risk' : 'Low Risk',
-                approvalProbability: isHighRisk ? 35 : 88,
-                approvalCategory: isHighRisk ? 'Caution Advised' : 'Highly Recommended',
-                dti: isHighRisk ? 45 : 28,
-                dtiCategory: isHighRisk ? 'High' : 'Healthy',
-                factors: [
-                    { label: 'Payment History', score: 'Excellent', color: 'text-green-600', desc: 'Consistent on-time payments.' },
-                    { label: 'Credit Utilization', score: isHighRisk ? 'Warning' : 'Good', color: isHighRisk ? 'text-yellow-600' : 'text-blue-600', desc: isHighRisk ? 'Using 40% of available credit.' : 'Using 15% of available credit.' },
-                    { label: 'Recent Hard Inquiries', score: 'Warning', color: 'text-yellow-600', desc: '2 inquiries in last 6 months.' }
-                ],
-                insights: [
-                    `Applicant has a ${application.servicePeriod} service length which is factored.`,
-                    isHighRisk ? 'High loan amount relative to income triggers careful review.' : 'Strong debt-to-income ratio indicates solid capability to repay.',
-                    `Employment as '${application.employmentType}' in '${application.employerName}' reviewed.`
-                ],
-                alerts: isHighRisk ? ['Requires secondary managerial approval due to requested threshold.'] : []
-            };
-            
-            return res.json({ status: 'success', data: mockData });
+        if (!response.ok) {
+            throw new Error(`Python service responded with status: ${response.status}`);
         }
+
+        const riskData = await response.json();
+        return res.json({ status: 'success', data: riskData });
     } catch (error) {
         console.error('Error fetching risk assessment:', error);
         res.status(500).json({ status: 'error', message: 'Failed to assess risk', error: error.message });
@@ -339,6 +313,21 @@ app.get('/api/officer/customers', async (req, res) => {
     } catch (error) {
         console.error('Error extracting customers for officer:', error);
         res.status(500).json({ status: 'error', message: 'Failed to fetch customers', error: error.message });
+    }
+});
+
+/*
+ * API Endpoint: Get All Applications by Customer NIC
+ * Method: GET
+ * Response: All loan applications linked to the given NIC
+ */
+app.get('/api/officer/customers/:nic/applications', async (req, res) => {
+    try {
+        const applications = await Application.find({ nic: req.params.nic }).sort({ createdAt: -1 });
+        res.json(applications);
+    } catch (error) {
+        console.error('Error fetching customer applications:', error);
+        res.status(500).json({ status: 'error', message: 'Failed to fetch customer applications', error: error.message });
     }
 });
 

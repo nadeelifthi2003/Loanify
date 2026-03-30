@@ -237,31 +237,104 @@ export const ApplicationVerification = () => {
 
                     {/* Decision */}
                     <Card className="p-6">
-                        <h2 className="text-base font-medium text-gray-700 dark:text-gray-200 mb-4">Decision</h2>
+                        <div className="flex items-center justify-between mb-1">
+                            <h2 className="text-base font-medium text-gray-700 dark:text-gray-200">Decision</h2>
+                            {app.status !== 'Pending' && (
+                                <button
+                                    disabled={actionLoading}
+                                    onClick={() => handleStatusUpdate('Pending')}
+                                    className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 underline disabled:opacity-40 transition-colors"
+                                >
+                                    Reset to Pending
+                                </button>
+                            )}
+                        </div>
+                        {app.status !== 'Pending' && (
+                            <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md px-3 py-2 mb-4">
+                                ⚠ A decision has been recorded. Other options are locked.
+                            </p>
+                        )}
                         <div className="space-y-3">
-                            <button 
-                                disabled={actionLoading || app.status === 'Approved'}
-                                onClick={() => handleStatusUpdate('Approved')}
-                                className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white py-3 px-4 rounded-md transition-colors text-sm font-medium">
-                                <CheckCircle className="w-4 h-4" />
-                                Approve Application
-                            </button>
-                            <button 
-                                disabled={actionLoading || app.status === 'Rejected'}
-                                onClick={() => handleStatusUpdate('Rejected')}
-                                className="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white py-3 px-4 rounded-md transition-colors text-sm font-medium">
-                                <XCircle className="w-4 h-4" />
-                                Reject Application
-                            </button>
-                            <button 
-                                disabled={actionLoading || app.status === 'Needs Info'}
-                                onClick={() => handleStatusUpdate('Needs Info')}
-                                className="w-full flex items-center justify-center gap-2 bg-yellow-500 hover:bg-yellow-600 disabled:opacity-50 text-white py-3 px-4 rounded-md transition-colors text-sm font-medium">
-                                <Info className="w-4 h-4" />
-                                Request More Info
-                            </button>
+                            {/* Approve */}
+                            {(() => {
+                                const isActive = app.status === 'Approved';
+                                const isLocked = app.status !== 'Pending' && !isActive;
+                                return (
+                                    <button
+                                        disabled={actionLoading || isActive || isLocked}
+                                        onClick={() => handleStatusUpdate('Approved')}
+                                        className={`w-full flex items-center justify-between gap-2 py-3 px-4 rounded-md transition-all text-sm font-medium border-2 ${
+                                            isActive
+                                                ? 'bg-green-600 border-green-600 text-white ring-2 ring-green-400 ring-offset-2 cursor-default'
+                                                : isLocked
+                                                ? 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-600 cursor-not-allowed'
+                                                : 'bg-green-600 border-green-600 text-white hover:bg-green-700 hover:border-green-700'
+                                        }`}
+                                    >
+                                        <span className="flex items-center gap-2">
+                                            <CheckCircle className="w-4 h-4" />
+                                            Approve Application
+                                        </span>
+                                        {isActive && <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">Current</span>}
+                                        {isLocked && <span className="text-xs">🔒</span>}
+                                    </button>
+                                );
+                            })()}
+
+                            {/* Reject */}
+                            {(() => {
+                                const isActive = app.status === 'Rejected';
+                                const isLocked = app.status !== 'Pending' && !isActive;
+                                return (
+                                    <button
+                                        disabled={actionLoading || isActive || isLocked}
+                                        onClick={() => handleStatusUpdate('Rejected')}
+                                        className={`w-full flex items-center justify-between gap-2 py-3 px-4 rounded-md transition-all text-sm font-medium border-2 ${
+                                            isActive
+                                                ? 'bg-red-600 border-red-600 text-white ring-2 ring-red-400 ring-offset-2 cursor-default'
+                                                : isLocked
+                                                ? 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-600 cursor-not-allowed'
+                                                : 'bg-red-600 border-red-600 text-white hover:bg-red-700 hover:border-red-700'
+                                        }`}
+                                    >
+                                        <span className="flex items-center gap-2">
+                                            <XCircle className="w-4 h-4" />
+                                            Reject Application
+                                        </span>
+                                        {isActive && <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">Current</span>}
+                                        {isLocked && <span className="text-xs">🔒</span>}
+                                    </button>
+                                );
+                            })()}
+
+                            {/* Needs Info */}
+                            {(() => {
+                                const isActive = app.status === 'Needs Info';
+                                const isLocked = app.status !== 'Pending' && !isActive;
+                                return (
+                                    <button
+                                        disabled={actionLoading || isActive || isLocked}
+                                        onClick={() => handleStatusUpdate('Needs Info')}
+                                        className={`w-full flex items-center justify-between gap-2 py-3 px-4 rounded-md transition-all text-sm font-medium border-2 ${
+                                            isActive
+                                                ? 'bg-yellow-500 border-yellow-500 text-white ring-2 ring-yellow-400 ring-offset-2 cursor-default'
+                                                : isLocked
+                                                ? 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-600 cursor-not-allowed'
+                                                : 'bg-yellow-500 border-yellow-500 text-white hover:bg-yellow-600 hover:border-yellow-600'
+                                        }`}
+                                    >
+                                        <span className="flex items-center gap-2">
+                                            <Info className="w-4 h-4" />
+                                            Request More Info
+                                        </span>
+                                        {isActive && <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">Current</span>}
+                                        {isLocked && <span className="text-xs">🔒</span>}
+                                    </button>
+                                );
+                            })()}
                         </div>
                     </Card>
+
 
                     {/* Timeline */}
                     <Card className="p-6">
