@@ -3,8 +3,15 @@ from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from fastapi.middleware.cors import CORSMiddleware
 import math
+import os
+import joblib
+import pandas as pd
 
 app = FastAPI(title="Loanify Risk & Eligibility API")
+
+# Load ML model safely
+MODEL_PATH = os.path.join(os.path.dirname(__file__), "model.joblib")
+risk_model = joblib.load(MODEL_PATH) if os.path.exists(MODEL_PATH) else None
 
 app.add_middleware(
     CORSMiddleware,
@@ -146,49 +153,69 @@ def predict_eligibility(data: EligibilityInput):
         else:
             max_loan = 0
         max_recommended_loan = int(min(max_loan, data.annualIncome * 3))
+        emp = data.employmentStatus.lower()
+
 
         # ── 2. Eligibility scoring (0–100) ────────────────────────────────
-        score = 60  # base score – applicant starts with a fair standing
+        if risk_model:
+            input_df = pd.DataFrame([{
+                'age': 30, # Default proxy if age not provided
+                'annual_income': data.annualIncome,
+                'net_monthly_income': gross_monthly * 0.85, # Estimate net
+                'existing_loan_commitments': data.existingLoanCommitments,
+                'loan_amount': data.loanAmount,
+                'loan_term': data.loanTerm,
+                'employment_status': 'Permanent' if 'permanent' in data.employmentStatus.lower() else data.employmentStatus.title(),
+                'dependents': data.dependents
+            }])
+            ml_risk_score = risk_model.predict(input_df)[0]
+            # Convert risk (high=bad) to eligibility score (high=good)
+            score = int(100 - ml_risk_score)
 
-        # A. DTI contribution (±30 points)
-        if dti < 25:
-            score += 30
-        elif dti < 35:
-            score += 20
-        elif dti < 45:
-            score += 10
-        elif dti < 55:
-            score -= 10
+
+            document_bonus = 10 if data.incomeVerified else 0
+            score += document_bonus
         else:
-            score -= 30   # hard penalise > 55 %
+            score = 60  # base score – applicant starts with a fair standing
 
-        # B. LTI contribution (±15 points)
-        if lti < 1:
-            score += 15
-        elif lti < 2:
-            score += 10
-        elif lti < 3.5:
-            score += 5
-        elif lti < 5:
-            score -= 5
-        else:
-            score -= 15
+            # A. DTI contribution (±30 points)
+            if dti < 25:
+                score += 30
+            elif dti < 35:
+                score += 20
+            elif dti < 45:
+                score += 10
+            elif dti < 55:
+                score -= 10
+            else:
+                score -= 30   # hard penalise > 55 %
 
-        # C. Employment stability (±10 points)
-        emp = data.employmentStatus.lower()
-        if "permanent" in emp or "full-time" in emp:
-            score += 10
-        elif "contract" in emp:
-            score += 3
-        elif "business" in emp or "self" in emp:
-            score -= 5
+            # B. LTI contribution (±15 points)
+            if lti < 1:
+                score += 15
+            elif lti < 2:
+                score += 10
+            elif lti < 3.5:
+                score += 5
+            elif lti < 5:
+                score -= 5
+            else:
+                score -= 15
 
-        # D. Dependents (up to ‑5)
-        score -= min(data.dependents, 5)
+            # C. Employment stability (±10 points)
+            if "permanent" in emp or "full-time" in emp:
+                score += 10
+            elif "contract" in emp:
+                score += 3
+            elif "business" in emp or "self" in emp:
+                score -= 5
 
-        # E. Document bonus – income verification via uploaded document
-        document_bonus = 10 if data.incomeVerified else 0
-        score += document_bonus
+            # D. Dependents (up to ‑5)
+            score -= min(data.dependents, 5)
+
+            # E. Document bonus – income verification via uploaded document
+            document_bonus = 10 if data.incomeVerified else 0
+            score += document_bonus
 
         score = max(0, min(score, 100))
 
@@ -359,16 +386,30 @@ def predict_risk(data: ApplicationData):
         lti = data.loanAmount / (data.grossMonthlyIncome * 12) if data.grossMonthlyIncome > 0 else float("inf")
 
         risk_score = 10
-        if dti > 50:   risk_score += 40
-        elif dti > 40: risk_score += 25
-        elif dti > 30: risk_score += 15
-
-        if lti > 4:   risk_score += 20
-        elif lti > 2: risk_score += 10
-
         emp_type = data.employmentType.lower()
-        if "business" in emp_type or "self" in emp_type: risk_score += 15
-        elif "contract" in emp_type: risk_score += 10
+
+        if risk_model:
+            input_df = pd.DataFrame([{
+                'age': 30, # Default or could be parsed from dob
+                'annual_income': data.grossMonthlyIncome * 12,
+                'net_monthly_income': data.netMonthlyIncome,
+                'existing_loan_commitments': data.existingLoanCommitments,
+                'loan_amount': data.loanAmount,
+                'loan_term': data.tenure,
+                'employment_status': 'Permanent' if 'permanent' in emp_type else data.employmentType.title(),
+                'dependents': data.dependents
+            }])
+            risk_score = int(risk_model.predict(input_df)[0])
+        else:
+            if dti > 50:   risk_score += 40
+            elif dti > 40: risk_score += 25
+            elif dti > 30: risk_score += 15
+
+            if lti > 4:   risk_score += 20
+            elif lti > 2: risk_score += 10
+
+            if "business" in emp_type or "self" in emp_type: risk_score += 15
+            elif "contract" in emp_type: risk_score += 10
 
         risk_score = min(int(risk_score), 99)
 
