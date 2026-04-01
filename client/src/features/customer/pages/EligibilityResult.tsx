@@ -69,7 +69,7 @@ export const EligibilityResult = () => {
         <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
 
             {/* Hero verdict banner */}
-            <Card className={`p-8 bg-gradient-to-br border-2 ${headerBg}`}>
+            <Card className={`p-8 bg-linear-to-br border-2 ${headerBg}`}>
                 <div className="flex flex-col md:flex-row md:items-center gap-6">
                     <div className={`p-4 rounded-full bg-white dark:bg-gray-900 shadow-sm flex-shrink-0 self-start`}>
                         <VerdictIcon className={`w-10 h-10 ${verdictIconColor}`} />

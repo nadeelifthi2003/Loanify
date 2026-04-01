@@ -5,23 +5,44 @@ import { Button } from '@/components/ui/Button';
 import { CheckCircle, XCircle, Download, FileText, ArrowLeft, Loader2, Info } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 
+interface RiskSummary {
+    overallRiskScore: number;
+    riskCategory: string;
+    approvalProbability: number;
+    approvalCategory: string;
+    dti: number;
+    dtiCategory: string;
+}
+
 export const ApplicationVerification = () => {
     const navigate = useNavigate();
     const { id } = useParams();
     const { showToast } = useToast();
     
     const [app, setApp] = useState<any>(null);
+    const [riskSummary, setRiskSummary] = useState<RiskSummary | null>(null);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
 
     useEffect(() => {
-        const fetchApp = async () => {
+        const fetchAppAndRisk = async () => {
             try {
-                const res = await fetch(`http://localhost:5000/api/officer/applications/${id}`);
-                if (res.ok) {
-                    setApp(await res.json());
+                const [appRes, riskRes] = await Promise.all([
+                    fetch(`http://localhost:5000/api/officer/applications/${id}`),
+                    fetch(`http://localhost:5000/api/applications/${id}/risk`)
+                ]);
+
+                if (appRes.ok) {
+                    setApp(await appRes.json());
                 } else {
                     showToast('Application not found', 'error');
+                }
+
+                if (riskRes.ok) {
+                    const riskPayload = await riskRes.json();
+                    if (riskPayload.status === 'success') {
+                        setRiskSummary(riskPayload.data);
+                    }
                 }
             } catch (err) {
                 console.error("Error fetching application:", err);
@@ -31,7 +52,7 @@ export const ApplicationVerification = () => {
             }
         };
         if (id) {
-            fetchApp();
+            fetchAppAndRisk();
         }
     }, [id, showToast]);
 
@@ -81,6 +102,12 @@ export const ApplicationVerification = () => {
         'Rejected': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
         'Needs Info': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
         'Pending': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+    };
+
+    const riskColors: Record<string, string> = {
+        'Low Risk': 'text-green-500',
+        'Medium Risk': 'text-yellow-500',
+        'High Risk': 'text-red-500'
     };
 
     return (
@@ -229,9 +256,18 @@ export const ApplicationVerification = () => {
 
                         <div className="bg-gray-200 dark:bg-gray-800 p-6 rounded-md text-center mb-6">
                             <p className="text-sm text-gray-500 mb-1">Expected Risk Check</p>
-                            <p className="text-lg font-medium mb-1 font-bold">
-                                {app.loanAmount > 100000 ? <span className="text-red-500">HIGH</span> : app.loanAmount > 50000 ? <span className="text-yellow-500">MEDIUM</span> : <span className="text-green-500">LOW</span>}
-                            </p>
+                            {riskSummary ? (
+                                <>
+                                    <p className={`text-lg font-medium mb-1 font-bold ${riskColors[riskSummary.riskCategory] || 'text-gray-600'}`}>
+                                        {riskSummary.riskCategory.replace(' Risk', '').toUpperCase()}
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                        Score {riskSummary.overallRiskScore}/100 · Approval {riskSummary.approvalProbability}%
+                                    </p>
+                                </>
+                            ) : (
+                                <p className="text-sm text-gray-500">Risk analysis unavailable</p>
+                            )}
                         </div>
                     </Card>
 

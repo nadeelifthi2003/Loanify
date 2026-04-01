@@ -46,6 +46,8 @@ const applicationSchema = new mongoose.Schema({
         amount: { type: Number, required: true }
     }],
     nextDueDate: { type: Date },
+    eligibilityResult: { type: Object, required: false },
+    eligibilityCheckedAt: { type: Date },
     createdAt: { type: Date, default: Date.now }
 });
 

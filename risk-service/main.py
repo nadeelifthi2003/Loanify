@@ -6,6 +6,7 @@ import math
 import os
 import joblib
 import pandas as pd
+from datetime import date, datetime
 
 app = FastAPI(title="Loanify Risk & Eligibility API")
 
@@ -50,6 +51,7 @@ class EligibilityInput(BaseModel):
     dependents: int = 0
     existingLoanCommitments: float = 0.0
     incomeVerified: bool = False # True when proof-of-income document was uploaded
+    dob: Optional[str] = None
 
 class RiskFactor(BaseModel):
     label: str
@@ -107,6 +109,74 @@ def classify_dti(dti_pct: float):
     return "High"
 
 
+def normalize_employment_status(status: str) -> str:
+    normalized = (status or "").strip().lower()
+
+    if (
+        "permanent" in normalized
+        or "full-time" in normalized
+        or normalized in {"employed", "employee", "employer", "full time"}
+    ):
+        return "Permanent"
+    if "contract" in normalized or "temporary" in normalized:
+        return "Contract"
+    if "self" in normalized:
+        return "Self-Employed"
+    if "business" in normalized:
+        return "Business"
+
+    return status.title() if status else "Unknown"
+
+
+def calculate_rule_based_risk(dti_pct: float, lti: float, employment_type: str, dependents: int = 0) -> int:
+    risk_score = 10
+    normalized_emp = normalize_employment_status(employment_type).lower()
+
+    if dti_pct >= 60:
+        risk_score += 55
+    elif dti_pct >= 50:
+        risk_score += 40
+    elif dti_pct >= 40:
+        risk_score += 25
+    elif dti_pct >= 30:
+        risk_score += 15
+    elif dti_pct < 15:
+        risk_score -= 5
+
+    if lti >= 5:
+        risk_score += 25
+    elif lti >= 4:
+        risk_score += 20
+    elif lti >= 2:
+        risk_score += 10
+    elif lti < 0.5:
+        risk_score -= 5
+
+    if "business" in normalized_emp or "self" in normalized_emp:
+        risk_score += 15
+    elif "contract" in normalized_emp:
+        risk_score += 10
+    elif "permanent" in normalized_emp:
+        risk_score -= 5
+
+    risk_score += min(max(dependents, 0), 5)
+
+    return max(0, min(int(risk_score), 99))
+
+
+def calculate_age_from_dob(dob: Optional[str], default_age: int = 30) -> int:
+    if not dob:
+        return default_age
+
+    try:
+        birth_date = datetime.strptime(dob, "%Y-%m-%d").date()
+        today = date.today()
+        age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+        return max(18, min(age, 75))
+    except ValueError:
+        return default_age
+
+
 # ─────────────────────────────────────────────
 # Endpoints
 # ─────────────────────────────────────────────
@@ -153,19 +223,21 @@ def predict_eligibility(data: EligibilityInput):
         else:
             max_loan = 0
         max_recommended_loan = int(min(max_loan, data.annualIncome * 3))
-        emp = data.employmentStatus.lower()
+        normalized_emp = normalize_employment_status(data.employmentStatus)
+        emp = normalized_emp.lower()
+        applicant_age = calculate_age_from_dob(data.dob)
 
 
         # ── 2. Eligibility scoring (0–100) ────────────────────────────────
         if risk_model:
             input_df = pd.DataFrame([{
-                'age': 30, # Default proxy if age not provided
+                'age': applicant_age,
                 'annual_income': data.annualIncome,
                 'net_monthly_income': gross_monthly * 0.85, # Estimate net
                 'existing_loan_commitments': data.existingLoanCommitments,
                 'loan_amount': data.loanAmount,
                 'loan_term': data.loanTerm,
-                'employment_status': 'Permanent' if 'permanent' in data.employmentStatus.lower() else data.employmentStatus.title(),
+                'employment_status': normalized_emp,
                 'dependents': data.dependents
             }])
             ml_risk_score = risk_model.predict(input_df)[0]
@@ -203,7 +275,7 @@ def predict_eligibility(data: EligibilityInput):
                 score -= 15
 
             # C. Employment stability (±10 points)
-            if "permanent" in emp or "full-time" in emp:
+            if "permanent" in emp:
                 score += 10
             elif "contract" in emp:
                 score += 3
@@ -291,7 +363,7 @@ def predict_eligibility(data: EligibilityInput):
             ))
 
         # Employment
-        if "permanent" in emp or "full-time" in emp:
+        if "permanent" in emp:
             strengths.append(RiskFactor(
                 label="Employment Stability",
                 score="Excellent",
@@ -385,31 +457,34 @@ def predict_risk(data: ApplicationData):
 
         lti = data.loanAmount / (data.grossMonthlyIncome * 12) if data.grossMonthlyIncome > 0 else float("inf")
 
-        risk_score = 10
-        emp_type = data.employmentType.lower()
+        normalized_emp = normalize_employment_status(data.employmentType)
+        emp_type = normalized_emp.lower()
+        rule_risk_score = calculate_rule_based_risk(dti, lti, normalized_emp, data.dependents)
+        risk_score = rule_risk_score
+        applicant_age = calculate_age_from_dob(data.dob)
 
         if risk_model:
             input_df = pd.DataFrame([{
-                'age': 30, # Default or could be parsed from dob
+                'age': applicant_age,
                 'annual_income': data.grossMonthlyIncome * 12,
                 'net_monthly_income': data.netMonthlyIncome,
                 'existing_loan_commitments': data.existingLoanCommitments,
                 'loan_amount': data.loanAmount,
                 'loan_term': data.tenure,
-                'employment_status': 'Permanent' if 'permanent' in emp_type else data.employmentType.title(),
+                'employment_status': normalized_emp,
                 'dependents': data.dependents
             }])
-            risk_score = int(risk_model.predict(input_df)[0])
+            ml_risk_score = int(risk_model.predict(input_df)[0])
+            # Blend the ML prediction with hard affordability rules so low-risk
+            # applications are not overstated and clearly risky ones stay elevated.
+            risk_score = int(round((ml_risk_score * 0.45) + (rule_risk_score * 0.55)))
+
+            if dti >= 60 or lti > 5.5:
+                risk_score = max(risk_score, 75)
+            elif dti < 15 and lti < 0.5 and "permanent" in emp_type:
+                risk_score = min(risk_score, 29)
         else:
-            if dti > 50:   risk_score += 40
-            elif dti > 40: risk_score += 25
-            elif dti > 30: risk_score += 15
-
-            if lti > 4:   risk_score += 20
-            elif lti > 2: risk_score += 10
-
-            if "business" in emp_type or "self" in emp_type: risk_score += 15
-            elif "contract" in emp_type: risk_score += 10
+            risk_score = rule_risk_score
 
         risk_score = min(int(risk_score), 99)
 
@@ -426,7 +501,7 @@ def predict_risk(data: ApplicationData):
         if "permanent" in emp_type:
             factors.append(RiskFactor(label="Employment Stability", score="Excellent", color="text-green-600", desc="Permanent employment shows stability"))
         else:
-            factors.append(RiskFactor(label="Employment Stability", score="Fair", color="text-yellow-600", desc=f"{data.employmentType} may have income variance"))
+            factors.append(RiskFactor(label="Employment Stability", score="Fair", color="text-yellow-600", desc=f"{normalized_emp} may have income variance"))
 
         if dti < 30:
             factors.append(RiskFactor(label="Debt-to-Income", score="Excellent", color="text-green-600", desc=f"Healthy ratio at {dti}%"))

@@ -94,6 +94,10 @@ app.post('/api/applications', async (req, res) => {
         }
 
         const applicationId = `L-${Math.floor(1000 + Math.random() * 9000)}`;
+        const annualIncome = parseFloat(applicationData.annualIncome) || 0;
+        const grossMonthlyIncome = annualIncome > 0 ? annualIncome / 12 : 50000;
+        const existingLoanCommitments = parseFloat(applicationData.existingLoanCommitments) || 0;
+        const dependents = Math.max(0, parseInt(applicationData.dependents, 10) || 0);
 
         // Map frontend form data to strict Mongoose Schema requirements
         const newApplication = new Application({
@@ -105,17 +109,18 @@ app.post('/api/applications', async (req, res) => {
             dob: applicationData.dob || '1990-01-01',
             gender: 'Not Specified',
             maritalStatus: 'Not Specified',
-            dependents: 0,
+            dependents: dependents,
             contactNumber: '0700000000', // Default pending UI addition
             email: `${applicationData.firstName || 'applicant'}@example.com`.toLowerCase(),
             address: applicationData.gramaNiladhari || 'Not Specified',
-            residentialStatus: 'Owned',
+            residentialStatus: applicationData.residentialStatus || 'Owned',
             employmentType: applicationData.employmentStatus || 'Employed',
             employerName: 'Specified Employer',
             designation: 'Applicant',
-            servicePeriod: '1+ Years',
-            grossMonthlyIncome: applicationData.annualIncome ? parseFloat(applicationData.annualIncome) / 12 : 50000,
-            netMonthlyIncome: applicationData.annualIncome ? (parseFloat(applicationData.annualIncome) / 12) * 0.8 : 40000,
+            servicePeriod: applicationData.servicePeriod || '1+ Years',
+            grossMonthlyIncome: grossMonthlyIncome,
+            netMonthlyIncome: Math.max(grossMonthlyIncome - existingLoanCommitments, grossMonthlyIncome * 0.8),
+            existingLoanCommitments: existingLoanCommitments,
             loanType: applicationData.loanPurpose || 'Personal Loan',
             loanAmount: parseFloat(applicationData.loanAmount) || 0,
             loanPurpose: applicationData.loanPurpose || 'General',
@@ -144,10 +149,12 @@ app.post('/api/applications', async (req, res) => {
  */
 app.post('/api/eligibility', async (req, res) => {
     try {
+        const { applicationId, ...eligibilityPayload } = req.body;
+
         const response = await fetch('http://localhost:8000/eligibility', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(req.body)
+            body: JSON.stringify(eligibilityPayload)
         });
 
         if (!response.ok) {
@@ -155,6 +162,17 @@ app.post('/api/eligibility', async (req, res) => {
         }
 
         const result = await response.json();
+
+        if (applicationId) {
+            await Application.findOneAndUpdate(
+                { id: applicationId },
+                {
+                    eligibilityResult: result,
+                    eligibilityCheckedAt: new Date()
+                }
+            );
+        }
+
         res.json({ status: 'success', data: result });
     } catch (error) {
         console.error('Eligibility prediction error:', error);

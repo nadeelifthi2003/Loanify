@@ -138,7 +138,7 @@ export const RiskResult = () => {
             </div>
 
             {/* Main Hero Card */}
-            <Card className="overflow-hidden border-0 shadow-lg bg-gradient-to-br from-white to-gray-50 dark:from-dark-bg-secondary dark:to-gray-900">
+            <Card className="overflow-hidden border-0 shadow-lg bg-linear-to-br from-white to-gray-50 dark:from-dark-bg-secondary dark:to-gray-900">
                 <div className="grid grid-cols-1 md:grid-cols-2 p-8 gap-8 items-center">
                     <div className="space-y-6">
                         <div>

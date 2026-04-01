@@ -23,8 +23,12 @@ export const LoanApplication = () => {
         dob: '',
         nic: '',
         gramaNiladhari: '',
+        residentialStatus: 'Owned',
         employmentStatus: '',
+        servicePeriod: '',
+        dependents: '0',
         annualIncome: '',
+        existingLoanCommitments: '0',
         incomeCurrency: 'LKR',
         cribNumber: '',
         loanAmount: '',
@@ -83,7 +87,9 @@ export const LoanApplication = () => {
             if (!formData.dob) newErrors.dob = 'Date of Birth is required';
             if (!formData.nic) newErrors.nic = 'NIC is required';
             if (!formData.gramaNiladhari) newErrors.gramaNiladhari = 'Division is required';
+            if (!formData.residentialStatus) newErrors.residentialStatus = 'Residential Status is required';
             if (!formData.employmentStatus) newErrors.employmentStatus = 'Employment Status is required';
+            if (!formData.servicePeriod) newErrors.servicePeriod = 'Service Period is required';
             if (!formData.annualIncome) newErrors.annualIncome = 'Annual Income is required';
             if (cribStatus !== 'clean') {
                 // The alert in nextStep handles the blocking, but we can also add visual error if needed.
@@ -95,6 +101,8 @@ export const LoanApplication = () => {
             if (!formData.loanAmount || Number(formData.loanAmount) <= 0) newErrors.loanAmount = 'Valid Loan Amount is required';
             if (!formData.loanPurpose) newErrors.loanPurpose = 'Purpose is required';
             if (!formData.loanTerm || Number(formData.loanTerm) <= 0) newErrors.loanTerm = 'Valid Term is required';
+            if (Number(formData.dependents) < 0) newErrors.dependents = 'Dependents cannot be negative';
+            if (Number(formData.existingLoanCommitments) < 0) newErrors.existingLoanCommitments = 'Existing commitments cannot be negative';
         }
 
         if (step === 2) {
@@ -137,6 +145,7 @@ export const LoanApplication = () => {
 
             // 2. Call Python eligibility engine with form data + document flag
             const eligibilityPayload = {
+                applicationId: appData.applicationId,
                 firstName: formData.firstName,
                 lastName: formData.lastName,
                 annualIncome: parseFloat(formData.annualIncome) || 0,
@@ -144,9 +153,10 @@ export const LoanApplication = () => {
                 loanAmount: parseFloat(formData.loanAmount) || 0,
                 loanTerm: parseInt(formData.loanTerm) || 12,
                 loanPurpose: formData.loanPurpose,
-                dependents: 0,
-                existingLoanCommitments: 0,
-                incomeVerified: documents.proofOfIncome.length > 0   // true if proof-of-income uploaded
+                dependents: parseInt(formData.dependents, 10) || 0,
+                existingLoanCommitments: parseFloat(formData.existingLoanCommitments) || 0,
+                incomeVerified: documents.proofOfIncome.length > 0,   // true if proof-of-income uploaded
+                dob: formData.dob
             };
 
             const eligResponse = await fetch('http://localhost:5000/api/eligibility', {
@@ -262,15 +272,54 @@ export const LoanApplication = () => {
                                 onChange={handleInputChange}
                                 error={errors.nic}
                             />
-                            <Input
-                                label="Employment Status"
-                                placeholder="Employed"
-                                containerClassName="md:col-span-2"
-                                name="employmentStatus"
-                                value={formData.employmentStatus}
-                                onChange={handleInputChange}
-                                error={errors.employmentStatus}
-                            />
+                            <div className="space-y-1.5">
+                                <label className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary">Residential Status</label>
+                                <select
+                                    name="residentialStatus"
+                                    value={formData.residentialStatus}
+                                    onChange={handleInputChange}
+                                    className={`w-full rounded-lg border bg-white dark:bg-dark-surface px-3 py-2 text-sm text-light-text-primary dark:text-dark-text-primary shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all duration-200 ${errors.residentialStatus ? 'border-red-500' : 'border-slate-300 dark:border-slate-600'}`}
+                                >
+                                    <option value="Owned">Owned</option>
+                                    <option value="Rented">Rented</option>
+                                    <option value="Family Residence">Family Residence</option>
+                                    <option value="Company Provided">Company Provided</option>
+                                </select>
+                                {errors.residentialStatus && <p className="text-xs text-red-500">{errors.residentialStatus}</p>}
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary">Employment Status</label>
+                                <select
+                                    name="employmentStatus"
+                                    value={formData.employmentStatus}
+                                    onChange={handleInputChange}
+                                    className={`w-full rounded-lg border bg-white dark:bg-dark-surface px-3 py-2 text-sm text-light-text-primary dark:text-dark-text-primary shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all duration-200 ${errors.employmentStatus ? 'border-red-500' : 'border-slate-300 dark:border-slate-600'}`}
+                                >
+                                    <option value="">Select employment type</option>
+                                    <option value="Permanent">Permanent</option>
+                                    <option value="Contract">Contract</option>
+                                    <option value="Self-Employed">Self-Employed</option>
+                                    <option value="Business">Business Owner</option>
+                                </select>
+                                {errors.employmentStatus && <p className="text-xs text-red-500">{errors.employmentStatus}</p>}
+                            </div>
+                            <div className="md:col-span-2 space-y-1.5">
+                                <label className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary">Service Period</label>
+                                <select
+                                    name="servicePeriod"
+                                    value={formData.servicePeriod}
+                                    onChange={handleInputChange}
+                                    className={`w-full rounded-lg border bg-white dark:bg-dark-surface px-3 py-2 text-sm text-light-text-primary dark:text-dark-text-primary shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all duration-200 ${errors.servicePeriod ? 'border-red-500' : 'border-slate-300 dark:border-slate-600'}`}
+                                >
+                                    <option value="">Select service period</option>
+                                    <option value="Less than 6 months">Less than 6 months</option>
+                                    <option value="6-12 months">6-12 months</option>
+                                    <option value="1-3 years">1-3 years</option>
+                                    <option value="3-5 years">3-5 years</option>
+                                    <option value="5+ years">5+ years</option>
+                                </select>
+                                {errors.servicePeriod && <p className="text-xs text-red-500">{errors.servicePeriod}</p>}
+                            </div>
                             <div className="md:col-span-2 space-y-1.5">
                                 <label className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary">Annual Income</label>
                                 <div className="flex gap-2">
@@ -375,6 +424,26 @@ export const LoanApplication = () => {
                             value={formData.loanTerm}
                             onChange={handleInputChange}
                             error={errors.loanTerm}
+                        />
+                        <Input
+                            label="Number of Dependents"
+                            type="number"
+                            min="0"
+                            placeholder="0"
+                            name="dependents"
+                            value={formData.dependents}
+                            onChange={handleInputChange}
+                            error={errors.dependents}
+                        />
+                        <Input
+                            label="Existing Monthly Loan Commitments (LKR)"
+                            type="number"
+                            min="0"
+                            placeholder="0"
+                            name="existingLoanCommitments"
+                            value={formData.existingLoanCommitments}
+                            onChange={handleInputChange}
+                            error={errors.existingLoanCommitments}
                         />
                     </div>
                 )}
@@ -558,6 +627,11 @@ export const LoanApplication = () => {
                                 <p><strong>Term:</strong> {formData.loanTerm} Months</p>
                                 <p><strong>Purpose:</strong> {formData.loanPurpose}</p>
                                 <p><strong>Annual Income:</strong> {formData.incomeCurrency} {formData.annualIncome}</p>
+                                <p><strong>Residential Status:</strong> {formData.residentialStatus}</p>
+                                <p><strong>Employment:</strong> {formData.employmentStatus}</p>
+                                <p><strong>Service Period:</strong> {formData.servicePeriod}</p>
+                                <p><strong>Dependents:</strong> {formData.dependents}</p>
+                                <p><strong>Existing Monthly Commitments:</strong> LKR {Number(formData.existingLoanCommitments || 0).toLocaleString()}</p>
                             </div>
                         </div>
                     </div>

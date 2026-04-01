@@ -63,7 +63,7 @@ export const Hero = () => {
                     <div className="flex-1 relative w-full max-w-lg lg:max-w-none animate-fade-up" style={{ animationDelay: '300ms' }}>
                         <div className="relative z-10 animate-float">
                             <div className="relative bg-white/50 dark:bg-dark-surface/50 backdrop-blur-xl rounded-3xl p-4 shadow-2xl border border-white/20 dark:border-white/10">
-                                <div className="aspect-[4/3] bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 rounded-2xl overflow-hidden relative flex items-center justify-center">
+                                <div className="aspect-[4/3] bg-linear-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 rounded-2xl overflow-hidden relative flex items-center justify-center">
                                     {/* Central Logo */}
                                     <div className="relative z-10 p-8 bg-white dark:bg-dark-surface rounded-3xl shadow-xl hover:scale-105 transition-transform duration-500">
                                         <img src="/logo.jpg" alt="Loanify Logo" className="w-32 h-32 object-contain drop-shadow-2xl" />

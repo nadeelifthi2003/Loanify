@@ -1,10 +1,36 @@
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { Modal } from '@/components/ui/Modal';
 import { DollarSign, CreditCard, Calendar, ArrowUpRight, TrendingUp, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import { useState, useEffect } from 'react';
+
+interface RiskFactor {
+    label: string;
+    score: string;
+    color: string;
+    desc: string;
+}
+
+interface EligibilityResult {
+    eligible: boolean;
+    verdict: string;
+    verdictColor: string;
+    eligibilityScore: number;
+    approvalProbability: number;
+    estimatedEMI: number;
+    dti: number;
+    dtiCategory: string;
+    lti: number;
+    maxRecommendedLoan: number;
+    documentBonus: number;
+    strengths: RiskFactor[];
+    improvements: RiskFactor[];
+    insights: string[];
+    alerts: Array<{ title: string; desc: string }>;
+}
 
 interface Application {
     id: string;
@@ -16,10 +42,14 @@ interface Application {
     paidAmount?: number;
     tenure?: number;
     nextDueDate?: string;
+    createdAt?: string;
+    eligibilityResult?: EligibilityResult;
+    eligibilityCheckedAt?: string;
 }
 
 export const CustomerDashboard = () => {
     const [recentApplications, setRecentApplications] = useState<Application[]>([]);
+    const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
 
     useEffect(() => {
         const fetchApplications = async () => {
@@ -58,6 +88,23 @@ export const CustomerDashboard = () => {
     const nearestDueDate = upcomingDates.length > 0 
         ? upcomingDates[0].toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
         : 'Update Pending';
+
+    const getStatusVariant = (status: string) => (
+        status === 'Approved'
+            ? 'success'
+            : status === 'Rejected'
+                ? 'error'
+                : status === 'Needs Info'
+                    ? 'warning'
+                    : 'info'
+    );
+
+    const getVerdictVariant = (verdict?: string) => {
+        if (!verdict) return 'default';
+        if (verdict === 'Likely Eligible') return 'success';
+        if (verdict === 'Conditionally Eligible') return 'warning';
+        return 'error';
+    };
 
     return (
         <div className="space-y-6">
@@ -138,14 +185,22 @@ export const CustomerDashboard = () => {
                             </div>
                         ) : (
                             recentApplications.map((app) => (
-                                <div key={app.id} className="p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                <button
+                                    key={app.id}
+                                    type="button"
+                                    onClick={() => setSelectedApplication(app)}
+                                    className="w-full p-4 flex items-center justify-between text-left hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                                >
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900/20 flex items-center justify-center">
+                                        <div className="w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900/20 flex items-center justify-center shrink-0">
                                             <FileText className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
                                         </div>
                                         <div>
                                             <p className="font-medium text-light-text-primary dark:text-dark-text-primary">{app.loanPurpose}</p>
                                             <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary">Application #{app.id}</p>
+                                            <p className="text-[11px] text-primary mt-1">
+                                                {app.eligibilityResult ? 'Click to view eligibility result' : 'Click to view application details'}
+                                            </p>
                                         </div>
                                     </div>
                                     <div className="text-right">
@@ -153,11 +208,18 @@ export const CustomerDashboard = () => {
                                             <span className="text-xs font-semibold text-primary mr-1">LKR</span>
                                             {Number(app.loanAmount).toLocaleString()}
                                         </p>
-                                        <Badge variant={app.status === 'Approved' ? 'success' : app.status === 'Rejected' ? 'error' : app.status === 'Needs Info' ? 'warning' : 'info'} size="sm" className="mt-1">
-                                            {app.status}
-                                        </Badge>
+                                        <div className="mt-1 flex flex-col items-end gap-1">
+                                            <Badge variant={getStatusVariant(app.status)} size="sm">
+                                                {app.status}
+                                            </Badge>
+                                            {app.eligibilityResult && (
+                                                <Badge variant={getVerdictVariant(app.eligibilityResult.verdict)} size="sm">
+                                                    {app.eligibilityResult.verdict}
+                                                </Badge>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
+                                </button>
                             ))
                         )}
                     </Card>
@@ -192,6 +254,152 @@ export const CustomerDashboard = () => {
                     </Card>
                 </div>
             </div>
+
+            <Modal
+                isOpen={Boolean(selectedApplication)}
+                onClose={() => setSelectedApplication(null)}
+                title={selectedApplication ? `Application Result - ${selectedApplication.id}` : 'Application Result'}
+                size="xl"
+                footer={
+                    <>
+                        <Button variant="ghost" onClick={() => setSelectedApplication(null)}>Close</Button>
+                        <Link to="/customer/loans">
+                            <Button>View My Applications</Button>
+                        </Link>
+                    </>
+                }
+            >
+                {selectedApplication && selectedApplication.eligibilityResult ? (
+                    <div className="space-y-6">
+                        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between p-5 rounded-xl border border-slate-200 dark:border-slate-700 bg-linear-to-br from-slate-50 to-white dark:from-slate-800/70 dark:to-slate-900">
+                            <div>
+                                <p className="text-sm text-slate-500">Loan Purpose</p>
+                                <h3 className="text-2xl font-bold text-light-text-primary dark:text-dark-text-primary mt-1">
+                                    {selectedApplication.loanPurpose}
+                                </h3>
+                                <div className="mt-3 flex flex-wrap items-center gap-2">
+                                    <Badge variant={getStatusVariant(selectedApplication.status)}>{selectedApplication.status}</Badge>
+                                    <Badge variant={getVerdictVariant(selectedApplication.eligibilityResult.verdict)}>
+                                        {selectedApplication.eligibilityResult.verdict}
+                                    </Badge>
+                                </div>
+                                {selectedApplication.eligibilityCheckedAt && (
+                                    <p className="text-xs text-slate-500 mt-3">
+                                        Eligibility checked on {new Date(selectedApplication.eligibilityCheckedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                                    </p>
+                                )}
+                            </div>
+                            <div className="text-left md:text-right">
+                                <p className="text-sm text-slate-500">Requested Amount</p>
+                                <p className="text-2xl font-bold text-light-text-primary dark:text-dark-text-primary">
+                                    LKR {Number(selectedApplication.loanAmount).toLocaleString()}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <Card className="p-4">
+                                <p className="text-xs uppercase tracking-wide text-slate-500">Eligibility Score</p>
+                                <p className="mt-2 text-2xl font-bold">{selectedApplication.eligibilityResult.eligibilityScore}/100</p>
+                            </Card>
+                            <Card className="p-4">
+                                <p className="text-xs uppercase tracking-wide text-slate-500">Approval Probability</p>
+                                <p className="mt-2 text-2xl font-bold">{selectedApplication.eligibilityResult.approvalProbability}%</p>
+                            </Card>
+                            <Card className="p-4">
+                                <p className="text-xs uppercase tracking-wide text-slate-500">Estimated EMI</p>
+                                <p className="mt-2 text-2xl font-bold">LKR {selectedApplication.eligibilityResult.estimatedEMI.toLocaleString()}</p>
+                            </Card>
+                            <Card className="p-4">
+                                <p className="text-xs uppercase tracking-wide text-slate-500">Debt-to-Income</p>
+                                <p className="mt-2 text-2xl font-bold">{selectedApplication.eligibilityResult.dti}%</p>
+                                <p className="text-xs text-slate-500 mt-1">{selectedApplication.eligibilityResult.dtiCategory}</p>
+                            </Card>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <Card className="p-5">
+                                <h4 className="text-base font-semibold mb-4">Strengths</h4>
+                                {selectedApplication.eligibilityResult.strengths.length > 0 ? (
+                                    <div className="space-y-3">
+                                        {selectedApplication.eligibilityResult.strengths.map((factor, index) => (
+                                            <div key={`${factor.label}-${index}`} className="rounded-lg border border-green-100 dark:border-green-900/30 bg-green-50/70 dark:bg-green-900/10 p-3">
+                                                <div className="flex items-center justify-between gap-3">
+                                                    <p className="font-medium">{factor.label}</p>
+                                                    <span className={`text-xs font-semibold ${factor.color}`}>{factor.score}</span>
+                                                </div>
+                                                <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">{factor.desc}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-slate-500">No strong positives recorded for this application yet.</p>
+                                )}
+                            </Card>
+                            <Card className="p-5">
+                                <h4 className="text-base font-semibold mb-4">Improvement Areas</h4>
+                                {selectedApplication.eligibilityResult.improvements.length > 0 ? (
+                                    <div className="space-y-3">
+                                        {selectedApplication.eligibilityResult.improvements.map((factor, index) => (
+                                            <div key={`${factor.label}-${index}`} className="rounded-lg border border-amber-100 dark:border-amber-900/30 bg-amber-50/70 dark:bg-amber-900/10 p-3">
+                                                <div className="flex items-center justify-between gap-3">
+                                                    <p className="font-medium">{factor.label}</p>
+                                                    <span className={`text-xs font-semibold ${factor.color}`}>{factor.score}</span>
+                                                </div>
+                                                <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">{factor.desc}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-slate-500">No major improvement items were flagged for this result.</p>
+                                )}
+                            </Card>
+                        </div>
+
+                        <Card className="p-5">
+                            <h4 className="text-base font-semibold mb-4">AI Insights</h4>
+                            <div className="space-y-2">
+                                {selectedApplication.eligibilityResult.insights.map((insight, index) => (
+                                    <p key={`${insight}-${index}`} className="text-sm text-slate-700 dark:text-slate-300">
+                                        {index + 1}. {insight}
+                                    </p>
+                                ))}
+                            </div>
+                            {selectedApplication.eligibilityResult.maxRecommendedLoan > 0 && (
+                                <div className="mt-4 rounded-lg bg-slate-50 dark:bg-slate-800/70 p-3">
+                                    <p className="text-xs uppercase tracking-wide text-slate-500">Maximum Recommended Loan</p>
+                                    <p className="mt-1 text-lg font-semibold">
+                                        LKR {selectedApplication.eligibilityResult.maxRecommendedLoan.toLocaleString()}
+                                    </p>
+                                </div>
+                            )}
+                        </Card>
+
+                        {selectedApplication.eligibilityResult.alerts.length > 0 && (
+                            <Card className="p-5 border-red-200 dark:border-red-800 bg-red-50/70 dark:bg-red-900/10">
+                                <h4 className="text-base font-semibold text-red-700 dark:text-red-300 mb-4">Alerts</h4>
+                                <div className="space-y-3">
+                                    {selectedApplication.eligibilityResult.alerts.map((alert, index) => (
+                                        <div key={`${alert.title}-${index}`} className="rounded-lg bg-white/70 dark:bg-slate-900/60 border border-red-200 dark:border-red-800 p-3">
+                                            <p className="font-medium text-red-700 dark:text-red-300">{alert.title}</p>
+                                            <p className="text-sm text-red-600 dark:text-red-400 mt-1">{alert.desc}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </Card>
+                        )}
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                        <p className="text-sm text-slate-600 dark:text-slate-300">
+                            This application does not have a stored eligibility result yet.
+                        </p>
+                        <p className="text-sm text-slate-500">
+                            New applications submitted through the updated flow will save the eligibility analysis and open it here from Recent Applications.
+                        </p>
+                    </div>
+                )}
+            </Modal>
         </div>
     );
 };
