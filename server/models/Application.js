@@ -40,6 +40,12 @@ const applicationSchema = new mongoose.Schema({
     guarantorName: { type: String, required: false },
     guarantorNIC: { type: String, required: false },
     guarantorContact: { type: String, required: false },
+    paidAmount: { type: Number, default: 0 },
+    paymentHistory: [{
+        date: { type: Date, default: Date.now },
+        amount: { type: Number, required: true }
+    }],
+    nextDueDate: { type: Date },
     createdAt: { type: Date, default: Date.now }
 });
 

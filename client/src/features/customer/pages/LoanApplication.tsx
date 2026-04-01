@@ -282,9 +282,6 @@ export const LoanApplication = () => {
                                             className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-dark-surface px-3 py-2 text-sm text-light-text-primary dark:text-dark-text-primary shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all duration-200"
                                         >
                                             <option value="LKR">LKR</option>
-                                            <option value="USD">USD</option>
-                                            <option value="EUR">EUR</option>
-                                            <option value="GBP">GBP</option>
                                         </select>
                                     </div>
                                     <div className="flex-1">
@@ -348,9 +345,6 @@ export const LoanApplication = () => {
                                         className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-dark-surface px-3 py-2 text-sm text-light-text-primary dark:text-dark-text-primary shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all duration-200"
                                     >
                                         <option value="LKR">LKR</option>
-                                        <option value="USD">USD</option>
-                                        <option value="EUR">EUR</option>
-                                        <option value="GBP">GBP</option>
                                     </select>
                                 </div>
                                 <div className="flex-1">

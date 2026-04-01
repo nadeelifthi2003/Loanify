@@ -25,6 +25,7 @@ import { OfficerSettings } from '@/features/officer/pages/OfficerSettings';
 import { AdminDashboard } from '@/features/admin/pages/AdminDashboard';
 import { UserManagement } from '@/features/admin/pages/UserManagement';
 import { SystemSettings } from '@/features/admin/pages/SystemSettings';
+import { AboutPage, FeaturesPage, PricingPage, ContactPage, PrivacyPage, TermsPage, CookiesPage } from '@/pages/StaticPages';
 
 function App() {
   return (
@@ -34,6 +35,15 @@ function App() {
           <AuthProvider>
             <Routes>
               <Route path="/" element={<Landing />} />
+
+              {/* Static / Footer Pages */}
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/features" element={<FeaturesPage />} />
+              <Route path="/pricing" element={<PricingPage />} />
+              <Route path="/contact" element={<ContactPage />} />
+              <Route path="/privacy" element={<PrivacyPage />} />
+              <Route path="/terms" element={<TermsPage />} />
+              <Route path="/cookies" element={<CookiesPage />} />
 
               {/* Auth Routes */}
               <Route path="/auth" element={<AuthLayout />}>

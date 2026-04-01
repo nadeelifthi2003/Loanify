@@ -135,9 +135,6 @@ export const EMICalculator = () => {
                                     className="inline-flex items-center px-3 rounded-r-md border border-l-0 border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-500 dark:text-slate-300 sm:text-sm focus:ring-primary focus:border-primary"
                                 >
                                     <option value="LKR">LKR</option>
-                                    <option value="USD">USD</option>
-                                    <option value="EUR">EUR</option>
-                                    <option value="GBP">GBP</option>
                                 </select>
                             </div>
                         </div>

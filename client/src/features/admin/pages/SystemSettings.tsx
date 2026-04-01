@@ -20,7 +20,7 @@ export const SystemSettings = () => {
                     <h3 className="text-lg font-semibold text-light-text-primary dark:text-dark-text-primary">General Configuration</h3>
                     <Input label="Platform Name" defaultValue="Loanify" />
                     <Input label="Support Email" defaultValue="support@loanify.com" />
-                    <Input label="Max Loan Amount ($)" type="number" defaultValue="500000" />
+                    <Input label="Max Loan Amount (LKR)" type="number" defaultValue="500000" />
                     <Input label="Default Interest Rate (%)" type="number" defaultValue="5.5" step="0.1" />
                 </Card>
 

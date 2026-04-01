@@ -126,7 +126,7 @@ export const OfficerDashboard = () => {
                                     <div>
                                         <p className="font-medium">{app.fullName}</p>
                                         <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary">
-                                            {app.loanType} • ${app.loanAmount?.toLocaleString()}
+                                            {app.loanType} • LKR {app.loanAmount?.toLocaleString()}
                                         </p>
                                     </div>
                                 </div>

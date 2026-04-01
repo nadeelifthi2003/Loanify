@@ -96,7 +96,7 @@ export const EligibilityResult = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
                     { label: 'Eligibility Score', value: `${result.eligibilityScore}/100`, sub: 'Composite' },
-                    { label: 'Estimated EMI', value: `${result.estimatedEMI.toLocaleString()}`, sub: 'per month' },
+                    { label: 'Estimated EMI', value: `LKR ${result.estimatedEMI.toLocaleString()}`, sub: 'per month' },
                     { label: 'Debt-to-Income', value: `${result.dti}%`, sub: result.dtiCategory },
                     { label: 'Doc Bonus', value: result.documentBonus > 0 ? `+${result.documentBonus} pts` : '0 pts', sub: result.documentBonus > 0 ? 'Income Verified' : 'Upload docs for bonus' },
                 ].map((m, i) => (

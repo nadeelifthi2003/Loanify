@@ -226,6 +226,64 @@ app.get('/api/applications/:id/risk', async (req, res) => {
 });
 
 /*
+ * API Endpoint: Process Loan Payment
+ * Method: POST
+ */
+app.post('/api/applications/:id/pay', async (req, res) => {
+    try {
+        const { amount } = req.body;
+        const paymentAmount = parseFloat(amount);
+        
+        if (isNaN(paymentAmount) || paymentAmount <= 0) {
+            return res.status(400).json({ status: 'error', message: 'Invalid payment amount' });
+        }
+
+        const application = await Application.findOne({ id: req.params.id });
+        if (!application) {
+            return res.status(404).json({ status: 'error', message: 'Application not found' });
+        }
+
+        if (application.status !== 'Approved') {
+            return res.status(400).json({ status: 'error', message: 'Can only make payments on Approved loans' });
+        }
+
+        application.paidAmount = (application.paidAmount || 0) + paymentAmount;
+        
+        // Push actual chronological ledger entry
+        if (!application.paymentHistory) application.paymentHistory = [];
+        application.paymentHistory.push({
+            date: new Date(),
+            amount: paymentAmount
+        });
+
+        // Advance the next due date by 1 month if fully paid
+        // Assuming every payment at least covers the EMI for now for MVP
+        if (application.nextDueDate) {
+            const currentDue = new Date(application.nextDueDate);
+            // Move month forward
+            let nextM = currentDue.getMonth() + 1;
+            let nextY = currentDue.getFullYear();
+            if (nextM > 11) {
+                nextM = 0;
+                nextY++;
+            }
+            application.nextDueDate = new Date(nextY, nextM, currentDue.getDate());
+        }
+
+        await application.save();
+
+        res.json({
+            status: 'success',
+            message: `Successfully processed payment of LKR ${paymentAmount.toLocaleString()}`,
+            application: application
+        });
+    } catch (error) {
+        console.error('Error processing payment:', error);
+        res.status(500).json({ status: 'error', message: 'Failed to process payment', error: error.message });
+    }
+});
+
+/*
  * API Endpoint: Get All Applications (Officer)
  * Method: GET
  * Response: Array of all applications
@@ -267,15 +325,48 @@ app.put('/api/officer/applications/:id/status', async (req, res) => {
             return res.status(400).json({ status: 'error', message: 'Invalid status provided' });
         }
 
-        const application = await Application.findOneAndUpdate(
-            { id: req.params.id }, 
-            { status }, 
-            { new: true }
-        );
-        
+        const application = await Application.findOne({ id: req.params.id });
         if (!application) {
             return res.status(404).json({ status: 'error', message: 'Application not found' });
         }
+
+        application.status = status;
+
+        if (status === 'Approved' && !application.nextDueDate) {
+            // Find all other Approved applications for this customer to check existing due dates
+            const existingApps = await Application.find({ 
+                nic: application.nic, 
+                status: 'Approved', 
+                id: { $ne: application.id } 
+            });
+            
+            // Standard Sri Lankan repayment cycle days
+            const cycleDays = [25, 28, 5, 10]; 
+            const existingDays = existingApps
+                .filter(app => app.nextDueDate)
+                .map(app => new Date(app.nextDueDate).getDate());
+
+            // Pick the first available cycle day that isn't occupied
+            let targetDay = cycleDays.find(day => !existingDays.includes(day));
+            if (!targetDay) targetDay = 25; // fallback
+
+            const now = new Date();
+            let targetMonth = now.getMonth();
+            let targetYear = now.getFullYear();
+
+            // If we are approaching or past the target day, bump to next month
+            if (now.getDate() >= targetDay - 7 || targetDay < 15) {
+                targetMonth++;
+                if (targetMonth > 11) {
+                    targetMonth = 0;
+                    targetYear++;
+                }
+            }
+
+            application.nextDueDate = new Date(targetYear, targetMonth, targetDay);
+        }
+
+        await application.save();
         res.json({ status: 'success', message: `Application status updated to ${status}`, application });
     } catch (error) {
         console.error('Error updating application status:', error);

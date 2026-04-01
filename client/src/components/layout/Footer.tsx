@@ -1,9 +1,30 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Facebook, Twitter, Instagram, Linkedin, Send } from 'lucide-react';
+import { Facebook, Twitter, Instagram, Linkedin, Send, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 
 export const Footer = () => {
+    const [email, setEmail] = useState('');
+    const [subscribed, setSubscribed] = useState(false);
+    const [error, setError] = useState('');
+
+    const handleSubscribe = (e: React.FormEvent) => {
+        e.preventDefault();
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!email.trim()) {
+            setError('Please enter your email address.');
+            return;
+        }
+        if (!emailRegex.test(email)) {
+            setError('Please enter a valid email address.');
+            return;
+        }
+        setError('');
+        setSubscribed(true);
+        setEmail('');
+    };
+
     return (
         <footer className="bg-light-bg dark:bg-dark-bg border-t border-light-border dark:border-dark-border pt-16 pb-8">
             <div className="max-w-7xl mx-auto px-4 md:px-6">
@@ -101,15 +122,26 @@ export const Footer = () => {
                         <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mb-4">
                             Subscribe to our newsletter for the latest financial tips and updates.
                         </p>
-                        <form className="space-y-3" onSubmit={(e) => e.preventDefault()}>
-                            <Input
-                                placeholder="Enter your email"
-                                className="bg-white dark:bg-dark-surface"
-                            />
-                            <Button className="w-full" rightIcon={<Send className="w-4 h-4" />}>
-                                Subscribe
-                            </Button>
-                        </form>
+                        {subscribed ? (
+                            <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                                <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
+                                <p className="text-sm text-green-800 dark:text-green-300 font-medium">You're subscribed! Thank you.</p>
+                            </div>
+                        ) : (
+                            <form className="space-y-3" onSubmit={handleSubscribe}>
+                                <Input
+                                    placeholder="Enter your email"
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => { setEmail(e.target.value); setError(''); }}
+                                    className="bg-white dark:bg-dark-surface"
+                                />
+                                {error && <p className="text-xs text-red-500">{error}</p>}
+                                <Button type="submit" className="w-full" rightIcon={<Send className="w-4 h-4" />}>
+                                    Subscribe
+                                </Button>
+                            </form>
+                        )}
                     </div>
                 </div>
 

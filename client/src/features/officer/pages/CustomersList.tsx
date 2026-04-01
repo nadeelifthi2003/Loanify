@@ -167,7 +167,7 @@ export const CustomersList = () => {
                     </div>
                     <div>
                         <p className="text-sm text-gray-500">Total Portfolio Debt</p>
-                        <p className="text-2xl font-bold">${totalPortfolioDebt.toLocaleString()}</p>
+                        <p className="text-2xl font-bold">LKR {totalPortfolioDebt.toLocaleString()}</p>
                     </div>
                 </Card>
             </div>
@@ -241,7 +241,7 @@ export const CustomersList = () => {
                                     </td>
                                     <td className="px-4 py-3 font-medium text-center">{customer.activeLoans}</td>
                                     <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
-                                        ${customer.totalDebt?.toLocaleString() || 0}
+                                        LKR {customer.totalDebt?.toLocaleString() || 0}
                                     </td>
                                     <td className="px-4 py-3">
                                         <Badge variant={getStatusBadge(customer.status)} size="sm" className="capitalize">
@@ -331,7 +331,7 @@ export const CustomersList = () => {
                                 </div>
                                 <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4 text-center">
                                     <p className="text-xs text-purple-500 mb-1">Total Debt</p>
-                                    <p className="text-xl font-bold text-purple-700 dark:text-purple-300">${selectedCustomer.totalDebt?.toLocaleString() || 0}</p>
+                                    <p className="text-xl font-bold text-purple-700 dark:text-purple-300">LKR {selectedCustomer.totalDebt?.toLocaleString() || 0}</p>
                                 </div>
                             </div>
 
@@ -361,7 +361,7 @@ export const CustomersList = () => {
                                                     </span>
                                                 </div>
                                                 <div className="text-xs text-gray-500 space-y-1">
-                                                    <p><span className="font-medium">Amount:</span> ${app.loanAmount?.toLocaleString()}</p>
+                                                    <p><span className="font-medium">Amount:</span> LKR {app.loanAmount?.toLocaleString()}</p>
                                                     <p><span className="font-medium">Purpose:</span> {app.loanPurpose}</p>
                                                     <p><span className="font-medium">Date:</span> {new Date(app.date || app.createdAt).toLocaleDateString()}</p>
                                                 </div>

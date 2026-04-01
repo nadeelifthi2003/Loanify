@@ -10,9 +10,12 @@ interface Application {
     id: string;
     status: string;
     date: string;
-    loanAmount: string;
+    loanAmount: string | number;
     loanCurrency: string;
     loanPurpose: string;
+    paidAmount?: number;
+    tenure?: number;
+    nextDueDate?: string;
 }
 
 export const CustomerDashboard = () => {
@@ -31,6 +34,31 @@ export const CustomerDashboard = () => {
 
         fetchApplications();
     }, []);
+
+    const activeLoans = recentApplications.filter(app => app.status === 'Approved');
+    const totalActiveLoans = activeLoans.length;
+    
+    let totalActiveBalance = 0;
+    let totalNextPayment = 0;
+    
+    activeLoans.forEach(app => {
+        const amount = Number(app.loanAmount) || 0;
+        const paid = app.paidAmount || 0;
+        const balance = Math.max(0, amount - paid);
+        totalActiveBalance += balance;
+        
+        const nextPay = Math.min(balance, Math.round(amount / (app.tenure || 12)));
+        if (balance > 0) totalNextPayment += nextPay;
+    });
+
+    const upcomingDates = activeLoans
+        .map(a => new Date(a.nextDueDate || new Date()))
+        .sort((a, b) => a.getTime() - b.getTime());
+    
+    const nearestDueDate = upcomingDates.length > 0 
+        ? upcomingDates[0].toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+        : 'Update Pending';
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -57,7 +85,7 @@ export const CustomerDashboard = () => {
                     </div>
                     <div>
                         <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">Active Balance</p>
-                        <p className="text-xl font-bold text-light-text-primary dark:text-dark-text-primary">$12,450.00</p>
+                        <p className="text-xl font-bold text-light-text-primary dark:text-dark-text-primary">LKR {totalActiveBalance.toLocaleString()}</p>
                     </div>
                 </Card>
 
@@ -67,8 +95,10 @@ export const CustomerDashboard = () => {
                     </div>
                     <div>
                         <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">Next Payment</p>
-                        <p className="text-xl font-bold text-light-text-primary dark:text-dark-text-primary">$850.00</p>
-                        <p className="text-xs text-light-text-muted dark:text-dark-text-muted">Due Sep 25, 2024</p>
+                        <p className="text-xl font-bold text-light-text-primary dark:text-dark-text-primary">LKR {totalNextPayment.toLocaleString()}</p>
+                        <p className="text-xs text-light-text-muted dark:text-dark-text-muted">
+                            Due {nearestDueDate}
+                        </p>
                     </div>
                 </Card>
 
@@ -78,7 +108,7 @@ export const CustomerDashboard = () => {
                     </div>
                     <div>
                         <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">Active Loans</p>
-                        <p className="text-xl font-bold text-light-text-primary dark:text-dark-text-primary">2</p>
+                        <p className="text-xl font-bold text-light-text-primary dark:text-dark-text-primary">{totalActiveLoans}</p>
                     </div>
                 </Card>
 
@@ -120,9 +150,10 @@ export const CustomerDashboard = () => {
                                     </div>
                                     <div className="text-right">
                                         <p className="font-bold text-light-text-primary dark:text-dark-text-primary">
-                                            {app.loanCurrency} {Number(app.loanAmount).toLocaleString()}
+                                            <span className="text-xs font-semibold text-primary mr-1">LKR</span>
+                                            {Number(app.loanAmount).toLocaleString()}
                                         </p>
-                                        <Badge variant="warning" size="sm" className="mt-1">
+                                        <Badge variant={app.status === 'Approved' ? 'success' : app.status === 'Rejected' ? 'error' : app.status === 'Needs Info' ? 'warning' : 'info'} size="sm" className="mt-1">
                                             {app.status}
                                         </Badge>
                                     </div>
@@ -141,9 +172,11 @@ export const CustomerDashboard = () => {
                             <div>
                                 <p className="text-sm font-medium text-light-text-primary dark:text-dark-text-primary">Payment Due Soon</p>
                                 <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary mt-1">
-                                    Your EMI of $850 for Personal Loan is due in 3 days.
+                                    Your total EMI of LKR {totalNextPayment.toLocaleString()} is due soon.
                                 </p>
-                                <Button size="sm" variant="outline" className="mt-2 w-full">Pay Now</Button>
+                                <Link to="/customer/loans">
+                                    <Button size="sm" variant="outline" className="mt-2 w-full">Pay Now</Button>
+                                </Link>
                             </div>
                         </div>
                         <div className="h-px bg-light-border dark:bg-dark-border" />

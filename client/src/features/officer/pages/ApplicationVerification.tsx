@@ -151,15 +151,15 @@ export const ApplicationVerification = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12">
                             <div>
                                 <p className="text-xs text-gray-500 mb-1">Gross Monthly Income</p>
-                                <p className="text-sm font-medium">${app.grossMonthlyIncome?.toLocaleString()}</p>
+                                <p className="text-sm font-medium">LKR {app.grossMonthlyIncome?.toLocaleString()}</p>
                             </div>
                             <div>
                                 <p className="text-xs text-gray-500 mb-1">Net Monthly Income</p>
-                                <p className="text-sm font-medium">${app.netMonthlyIncome?.toLocaleString()}</p>
+                                <p className="text-sm font-medium">LKR {app.netMonthlyIncome?.toLocaleString()}</p>
                             </div>
                             <div>
                                 <p className="text-xs text-gray-500 mb-1">Existing Loan Commitments</p>
-                                <p className="text-sm font-medium">${app.existingLoanCommitments?.toLocaleString() || 0}</p>
+                                <p className="text-sm font-medium">LKR {app.existingLoanCommitments?.toLocaleString() || 0}</p>
                             </div>
                             <div>
                                 <p className="text-xs text-gray-500 mb-1">Service Period</p>
@@ -178,7 +178,7 @@ export const ApplicationVerification = () => {
                             </div>
                             <div>
                                 <p className="text-xs text-gray-500 mb-1">Requested Amount</p>
-                                <p className="text-sm font-medium">${app.loanAmount?.toLocaleString()}</p>
+                                <p className="text-sm font-medium">LKR {app.loanAmount?.toLocaleString()}</p>
                             </div>
                             <div>
                                 <p className="text-xs text-gray-500 mb-1">Duration</p>
