@@ -80,18 +80,48 @@ export const ApplicationVerification = () => {
         }
     };
 
-    const handleDownload = (docName: string) => {
-        const textContext = `This is a securely retrieved file from Loanify systems for: ${docName}\nApplicant: ${app.fullName}\n\n[FILE CONTENTS BLOCKED BY DEMO MODE]`;
-        const blob = new Blob([textContext], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = docName.replace('.pdf', '') + '_secure.txt';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        showToast(`Successfully downloaded: ${docName}`, 'success');
+    const handleDocumentStatusUpdate = async (docId: string, status: string) => {
+        try {
+            const res = await fetch(`http://localhost:5000/api/officer/applications/${id}/documents/${docId}/status`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status })
+            });
+            const d = await res.json();
+            if (res.ok) {
+                showToast(`Document successfully updated to ${status}`, 'success');
+                setApp(d.application);
+            } else {
+                showToast(d.message || 'Failed to update document status', 'error');
+            }
+        } catch (error) {
+            console.error('Document status update failed:', error);
+            showToast('Network error while updating document status', 'error');
+        }
+    };
+
+    const handleDownload = (doc: any) => {
+        try {
+            const dataParts = doc.data.split(',');
+            const base64Data = dataParts.length > 1 ? dataParts[1] : dataParts[0];
+            const binaryData = atob(base64Data);
+            const arrayBuffer = new Uint8Array(binaryData.length);
+            for (let i = 0; i < binaryData.length; i++) {
+                arrayBuffer[i] = binaryData.charCodeAt(i);
+            }
+            const blob = new Blob([arrayBuffer], { type: doc.fileType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = doc.fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast(`Successfully downloaded: ${doc.fileName}`, 'success');
+        } catch (e) {
+            showToast('Failed to download document', 'error');
+        }
     };
 
     if (loading) return <div className="p-8 text-center text-gray-500 flex justify-center items-center gap-2"><Loader2 className="animate-spin w-5 h-5"/> Loading application...</div>;
@@ -222,17 +252,28 @@ export const ApplicationVerification = () => {
                     <Card className="p-6">
                         <h2 className="text-base font-medium text-gray-700 dark:text-gray-200 mb-6">Uploaded Documents</h2>
                         <div className="space-y-3">
-                            {['Bank Statement - Last 6 Months.pdf', 'Employment Letter.pdf', 'Identity Proof.pdf', 'Address Proof.pdf'].map((doc, idx) => (
-                                <div key={idx} className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-md">
-                                    <div className="flex items-center gap-3">
-                                        <FileText className="w-5 h-5 text-gray-400" />
-                                        <span className="text-sm text-gray-700 dark:text-gray-300">{doc}</span>
+                            {app.documents && app.documents.length > 0 ? app.documents.map((doc: any) => (
+                                <div key={doc._id} className="flex flex-col gap-3 p-3 border border-gray-200 dark:border-gray-700 rounded-md">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <FileText className="w-5 h-5 text-gray-400" />
+                                            <span className="text-sm text-gray-700 dark:text-gray-300 truncate max-w-[200px]" title={doc.fileName}>{doc.fileName}</span>
+                                            {doc.status === 'Invalid' ? (
+                                                <span className="px-3 py-1 flex items-center gap-1 rounded bg-red-500 text-white text-xs font-bold shadow-sm ring-2 ring-red-500 ring-offset-1"><XCircle className="w-4 h-4" /> Invalid by System</span>
+                                            ) : doc.status === 'Valid' ? (
+                                                <span className="px-3 py-1 flex items-center gap-1 rounded bg-green-100 text-green-700 text-xs font-bold"><CheckCircle className="w-4 h-4"/> Valid by System</span>
+                                            ) : (
+                                                <span className="px-3 py-1 rounded bg-yellow-100 text-yellow-700 text-xs font-semibold">{doc.status}</span>
+                                            )}
+                                        </div>
+                                        <Button variant="outline" size="sm" leftIcon={<Download className="w-4 h-4" />} onClick={() => handleDownload(doc)}>
+                                            Download
+                                        </Button>
                                     </div>
-                                    <Button variant="outline" size="sm" leftIcon={<Download className="w-4 h-4" />} onClick={() => handleDownload(doc)}>
-                                        Download
-                                    </Button>
                                 </div>
-                            ))}
+                            )) : (
+                                <p className="text-sm text-gray-500">No documents uploaded.</p>
+                            )}
                         </div>
                     </Card>
                 </div>

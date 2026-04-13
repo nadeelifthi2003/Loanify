@@ -48,6 +48,16 @@ const applicationSchema = new mongoose.Schema({
     nextDueDate: { type: Date },
     eligibilityResult: { type: Object, required: false },
     eligibilityCheckedAt: { type: Date },
+    documents: [{
+        fileName: { type: String, required: true },
+        fileType: { type: String, required: true },
+        data: { type: String, required: true }, // Base64 or Blob
+        status: {
+            type: String,
+            enum: ['Pending', 'Valid', 'Invalid'],
+            default: 'Pending'
+        }
+    }],
     createdAt: { type: Date, default: Date.now }
 });
 

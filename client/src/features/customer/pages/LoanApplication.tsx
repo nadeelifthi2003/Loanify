@@ -130,11 +130,33 @@ export const LoanApplication = () => {
     const submitApplication = async () => {
         setIsSubmitting(true);
         try {
+            // Convert documents to Base64
+            const fileToBase64 = (file) => {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    reader.onload = () => resolve({
+                        fileName: file.name,
+                        fileType: file.type,
+                        data: reader.result
+                    });
+                    reader.onerror = error => reject(error);
+                });
+            };
+
+            const allDocs = [...documents.proofOfIncome, ...documents.idProof];
+            const base64Docs = await Promise.all(allDocs.map(file => fileToBase64(file)));
+
+            const applicationPayload = {
+                ...formData,
+                documents: base64Docs
+            };
+
             // 1. Submit application to MongoDB (existing flow)
             const appResponse = await fetch('http://localhost:5000/api/applications', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
+                body: JSON.stringify(applicationPayload)
             });
             const appData = await appResponse.json();
 

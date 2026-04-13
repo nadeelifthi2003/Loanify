@@ -16,7 +16,8 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Health Check
 app.get('/api/health', (req, res) => {
@@ -99,6 +100,29 @@ app.post('/api/applications', async (req, res) => {
         const existingLoanCommitments = parseFloat(applicationData.existingLoanCommitments) || 0;
         const dependents = Math.max(0, parseInt(applicationData.dependents, 10) || 0);
 
+        // Evaluate documents via ML Risk Service
+        const validatedDocs = [];
+        const inputDocs = applicationData.documents || [];
+        for (const doc of inputDocs) {
+            try {
+                const mlRes = await fetch('http://localhost:8000/validate-document', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(doc)
+                });
+                if (mlRes.ok) {
+                    const validation = await mlRes.json();
+                    doc.status = validation.status;
+                } else {
+                    doc.status = 'Pending';
+                }
+            } catch (e) {
+                console.error("ML Validation skipped for doc: ", e.message);
+                doc.status = 'Pending';
+            }
+            validatedDocs.push(doc);
+        }
+
         // Map frontend form data to strict Mongoose Schema requirements
         const newApplication = new Application({
             id: applicationId,
@@ -125,6 +149,7 @@ app.post('/api/applications', async (req, res) => {
             loanAmount: parseFloat(applicationData.loanAmount) || 0,
             loanPurpose: applicationData.loanPurpose || 'General',
             tenure: parseInt(applicationData.loanTerm) || 12,
+            documents: validatedDocs,
             createdAt: new Date()
         });
 
@@ -389,6 +414,70 @@ app.put('/api/officer/applications/:id/status', async (req, res) => {
     } catch (error) {
         console.error('Error updating application status:', error);
         res.status(500).json({ status: 'error', message: 'Failed to update status', error: error.message });
+    }
+});
+
+/*
+ * API Endpoint: Update Document Status (Officer)
+ * Method: PUT
+ */
+app.put('/api/officer/applications/:id/documents/:docId/status', async (req, res) => {
+    try {
+        const { status } = req.body;
+        const validStatuses = ['Pending', 'Valid', 'Invalid'];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({ status: 'error', message: 'Invalid document status provided' });
+        }
+
+        const application = await Application.findOne({ id: req.params.id });
+        if (!application) {
+            return res.status(404).json({ status: 'error', message: 'Application not found' });
+        }
+
+        const doc = application.documents.id(req.params.docId);
+        if (!doc) {
+            return res.status(404).json({ status: 'error', message: 'Document not found' });
+        }
+
+        doc.status = status;
+        await application.save();
+
+        res.json({ status: 'success', message: `Document status updated to ${status}`, application });
+    } catch (error) {
+        console.error('Error updating document status:', error);
+        res.status(500).json({ status: 'error', message: 'Failed to update document status', error: error.message });
+    }
+});
+
+/*
+ * API Endpoint: Update Document Status (Officer)
+ * Method: PUT
+ */
+app.put('/api/officer/applications/:id/documents/:docId/status', async (req, res) => {
+    try {
+        const { status } = req.body;
+        const validStatuses = ['Pending', 'Valid', 'Invalid'];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({ status: 'error', message: 'Invalid document status provided' });
+        }
+
+        const application = await Application.findOne({ id: req.params.id });
+        if (!application) {
+            return res.status(404).json({ status: 'error', message: 'Application not found' });
+        }
+
+        const doc = application.documents.id(req.params.docId);
+        if (!doc) {
+            return res.status(404).json({ status: 'error', message: 'Document not found' });
+        }
+
+        doc.status = status;
+        await application.save();
+
+        res.json({ status: 'success', message: `Document status updated to ${status}`, application });
+    } catch (error) {
+        console.error('Error updating document status:', error);
+        res.status(500).json({ status: 'error', message: 'Failed to update document status', error: error.message });
     }
 });
 

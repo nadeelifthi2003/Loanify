@@ -2,7 +2,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
-import { DollarSign, CreditCard, Calendar, ArrowUpRight, TrendingUp, FileText } from 'lucide-react';
+import { DollarSign, CreditCard, Calendar, ArrowUpRight, TrendingUp, FileText, CheckCircle, XCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import { useState, useEffect } from 'react';
@@ -45,6 +45,7 @@ interface Application {
     createdAt?: string;
     eligibilityResult?: EligibilityResult;
     eligibilityCheckedAt?: string;
+    documents?: Array<{ _id: string; fileName: string; fileType: string; status: string }>;
 }
 
 export const CustomerDashboard = () => {
@@ -269,9 +270,42 @@ export const CustomerDashboard = () => {
                     </>
                 }
             >
-                {selectedApplication && selectedApplication.eligibilityResult ? (
+                {selectedApplication ? (
                     <div className="space-y-6">
-                        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between p-5 rounded-xl border border-slate-200 dark:border-slate-700 bg-linear-to-br from-slate-50 to-white dark:from-slate-800/70 dark:to-slate-900">
+                        {selectedApplication.documents && selectedApplication.documents.length > 0 && (
+                            <Card className="p-5">
+                                <h4 className="text-base font-semibold mb-4">Uploaded Documents</h4>
+                                <div className="space-y-3">
+                                    {selectedApplication.documents.map((doc, idx) => (
+                                        <div key={idx} className="flex justify-between items-center p-3 rounded-lg border border-slate-200 dark:border-slate-700">
+                                            <div className="flex items-center gap-3">
+                                                <FileText className="w-5 h-5 text-slate-400" />
+                                                <p className="text-sm font-medium text-light-text-primary dark:text-dark-text-primary">{doc.fileName}</p>
+                                            </div>
+                                            {doc.status === 'Invalid' ? (
+                                                <Badge variant="error" className="bg-red-500 text-white font-bold px-3 py-1 flex items-center gap-1 shadow-sm ring-2 ring-red-500 ring-offset-1">
+                                                    <XCircle className="w-4 h-4" /> Invalid by System
+                                                </Badge>
+                                            ) : doc.status === 'Valid' ? (
+                                                <Badge variant="success" className="bg-green-100 text-green-700 font-bold px-3 py-1 flex items-center gap-1">
+                                                    <CheckCircle className="w-4 h-4" /> Valid by System
+                                                </Badge>
+                                            ) : (
+                                                <Badge variant="warning">{doc.status}</Badge>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </Card>
+                        )}
+                        {!selectedApplication.eligibilityResult ? (
+                            <div className="space-y-4">
+                                <p className="text-sm text-slate-600 dark:text-slate-300">
+                                    This application does not have a stored eligibility result yet.
+                                </p>
+                            </div>
+                        ) : (
+                                <><div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between p-5 rounded-xl border border-slate-200 dark:border-slate-700 bg-linear-to-br from-slate-50 to-white dark:from-slate-800/70 dark:to-slate-900">
                             <div>
                                 <p className="text-sm text-slate-500">Loan Purpose</p>
                                 <h3 className="text-2xl font-bold text-light-text-primary dark:text-dark-text-primary mt-1">
@@ -388,17 +422,10 @@ export const CustomerDashboard = () => {
                                 </div>
                             </Card>
                         )}
+                        </>
+                        )}
                     </div>
-                ) : (
-                    <div className="space-y-4">
-                        <p className="text-sm text-slate-600 dark:text-slate-300">
-                            This application does not have a stored eligibility result yet.
-                        </p>
-                        <p className="text-sm text-slate-500">
-                            New applications submitted through the updated flow will save the eligibility analysis and open it here from Recent Applications.
-                        </p>
-                    </div>
-                )}
+                ) : null}
             </Modal>
         </div>
     );
