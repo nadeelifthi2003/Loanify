@@ -80,26 +80,6 @@ export const ApplicationVerification = () => {
         }
     };
 
-    const handleDocumentStatusUpdate = async (docId: string, status: string) => {
-        try {
-            const res = await fetch(`http://localhost:5000/api/officer/applications/${id}/documents/${docId}/status`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status })
-            });
-            const d = await res.json();
-            if (res.ok) {
-                showToast(`Document successfully updated to ${status}`, 'success');
-                setApp(d.application);
-            } else {
-                showToast(d.message || 'Failed to update document status', 'error');
-            }
-        } catch (error) {
-            console.error('Document status update failed:', error);
-            showToast('Network error while updating document status', 'error');
-        }
-    };
-
     const handleDownload = (doc: any) => {
         try {
             const dataParts = doc.data.split(',');

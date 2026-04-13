@@ -4,6 +4,15 @@ const mongoose = require('mongoose');
 require('dotenv').config();
 
 const Application = require('./models/Application');
+const {
+    ROLE_OPTIONS,
+    STATUS_OPTIONS,
+    createUser,
+    getOverview,
+    listUsers,
+    updateUserRole,
+    updateUserStatus,
+} = require('./src/services/adminService');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -22,6 +31,58 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // Health Check
 app.get('/api/health', (req, res) => {
     res.status(200).json({ status: 'ok', message: 'Server is healthy' });
+});
+
+app.get('/api/admin/overview', async (req, res) => {
+    try {
+        const overview = await getOverview();
+        res.json(overview);
+    } catch (error) {
+        console.error('Error loading admin overview:', error);
+        res.status(500).json({ status: 'error', message: 'Failed to load admin overview', error: error.message });
+    }
+});
+
+app.get('/api/admin/users', async (req, res) => {
+    try {
+        const result = await listUsers(req.query || {});
+        res.json(result);
+    } catch (error) {
+        console.error('Error loading admin users:', error);
+        res.status(500).json({ status: 'error', message: 'Failed to load users', error: error.message });
+    }
+});
+
+app.post('/api/admin/users', async (req, res) => {
+    try {
+        const user = await createUser(req.body || {});
+        res.status(201).json({ status: 'success', user });
+    } catch (error) {
+        const statusCode = /exists|required|invalid/i.test(error.message) ? 400 : 500;
+        res.status(statusCode).json({ status: 'error', message: error.message });
+    }
+});
+
+app.patch('/api/admin/users/:id/status', async (req, res) => {
+    try {
+        const { status } = req.body || {};
+        const user = await updateUserStatus(req.params.id, status);
+        res.json({ status: 'success', user });
+    } catch (error) {
+        const statusCode = /not found/i.test(error.message) ? 404 : /invalid/i.test(error.message) ? 400 : 500;
+        res.status(statusCode).json({ status: 'error', message: error.message, allowedStatuses: STATUS_OPTIONS });
+    }
+});
+
+app.patch('/api/admin/users/:id/role', async (req, res) => {
+    try {
+        const { role } = req.body || {};
+        const user = await updateUserRole(req.params.id, role);
+        res.json({ status: 'success', user });
+    } catch (error) {
+        const statusCode = /not found/i.test(error.message) ? 404 : /invalid/i.test(error.message) ? 400 : 500;
+        res.status(statusCode).json({ status: 'error', message: error.message, allowedRoles: ROLE_OPTIONS });
+    }
 });
 
 // Dynamic CRIB Validation Logic (No Mocks)

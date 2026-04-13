@@ -131,8 +131,8 @@ export const LoanApplication = () => {
         setIsSubmitting(true);
         try {
             // Convert documents to Base64
-            const fileToBase64 = (file) => {
-                return new Promise((resolve, reject) => {
+            const fileToBase64 = (file: File) => {
+                return new Promise<{ fileName: string; fileType: string; data: string | ArrayBuffer | null }>((resolve, reject) => {
                     const reader = new FileReader();
                     reader.readAsDataURL(file);
                     reader.onload = () => resolve({
@@ -144,7 +144,7 @@ export const LoanApplication = () => {
                 });
             };
 
-            const allDocs = [...documents.proofOfIncome, ...documents.idProof];
+            const allDocs: File[] = [...documents.proofOfIncome, ...documents.idProof];
             const base64Docs = await Promise.all(allDocs.map(file => fileToBase64(file)));
 
             const applicationPayload = {
