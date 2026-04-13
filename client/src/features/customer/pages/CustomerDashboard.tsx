@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { DollarSign, CreditCard, Calendar, ArrowUpRight, TrendingUp, FileText, CheckCircle, XCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { formatNumber } from '@/utils/formatCurrency';
 
 import { useState, useEffect } from 'react';
 
@@ -133,7 +134,7 @@ export const CustomerDashboard = () => {
                     </div>
                     <div>
                         <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">Active Balance</p>
-                        <p className="text-xl font-bold text-light-text-primary dark:text-dark-text-primary">LKR {totalActiveBalance.toLocaleString()}</p>
+                        <p className="text-xl font-bold text-light-text-primary dark:text-dark-text-primary">LKR {formatNumber(totalActiveBalance)}</p>
                     </div>
                 </Card>
 
@@ -143,7 +144,7 @@ export const CustomerDashboard = () => {
                     </div>
                     <div>
                         <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">Next Payment</p>
-                        <p className="text-xl font-bold text-light-text-primary dark:text-dark-text-primary">LKR {totalNextPayment.toLocaleString()}</p>
+                        <p className="text-xl font-bold text-light-text-primary dark:text-dark-text-primary">LKR {formatNumber(totalNextPayment)}</p>
                         <p className="text-xs text-light-text-muted dark:text-dark-text-muted">
                             Due {nearestDueDate}
                         </p>
@@ -207,7 +208,7 @@ export const CustomerDashboard = () => {
                                     <div className="text-right">
                                         <p className="font-bold text-light-text-primary dark:text-dark-text-primary">
                                             <span className="text-xs font-semibold text-primary mr-1">LKR</span>
-                                            {Number(app.loanAmount).toLocaleString()}
+                                            {formatNumber(Number(app.loanAmount))}
                                         </p>
                                         <div className="mt-1 flex flex-col items-end gap-1">
                                             <Badge variant={getStatusVariant(app.status)} size="sm">
@@ -235,7 +236,7 @@ export const CustomerDashboard = () => {
                             <div>
                                 <p className="text-sm font-medium text-light-text-primary dark:text-dark-text-primary">Payment Due Soon</p>
                                 <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary mt-1">
-                                    Your total EMI of LKR {totalNextPayment.toLocaleString()} is due soon.
+                                    Your total EMI of LKR {formatNumber(totalNextPayment)} is due soon.
                                 </p>
                                 <Link to="/customer/loans">
                                     <Button size="sm" variant="outline" className="mt-2 w-full">Pay Now</Button>
@@ -326,7 +327,7 @@ export const CustomerDashboard = () => {
                             <div className="text-left md:text-right">
                                 <p className="text-sm text-slate-500">Requested Amount</p>
                                 <p className="text-2xl font-bold text-light-text-primary dark:text-dark-text-primary">
-                                    LKR {Number(selectedApplication.loanAmount).toLocaleString()}
+                                    LKR {formatNumber(Number(selectedApplication.loanAmount))}
                                 </p>
                             </div>
                         </div>
@@ -342,7 +343,7 @@ export const CustomerDashboard = () => {
                             </Card>
                             <Card className="p-4">
                                 <p className="text-xs uppercase tracking-wide text-slate-500">Estimated EMI</p>
-                                <p className="mt-2 text-2xl font-bold">LKR {selectedApplication.eligibilityResult.estimatedEMI.toLocaleString()}</p>
+                                <p className="mt-2 text-2xl font-bold">LKR {formatNumber(selectedApplication.eligibilityResult.estimatedEMI)}</p>
                             </Card>
                             <Card className="p-4">
                                 <p className="text-xs uppercase tracking-wide text-slate-500">Debt-to-Income</p>
@@ -403,7 +404,7 @@ export const CustomerDashboard = () => {
                                 <div className="mt-4 rounded-lg bg-slate-50 dark:bg-slate-800/70 p-3">
                                     <p className="text-xs uppercase tracking-wide text-slate-500">Maximum Recommended Loan</p>
                                     <p className="mt-1 text-lg font-semibold">
-                                        LKR {selectedApplication.eligibilityResult.maxRecommendedLoan.toLocaleString()}
+                                        LKR {formatNumber(selectedApplication.eligibilityResult.maxRecommendedLoan)}
                                     </p>
                                 </div>
                             )}

@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/Badge';
 import { useToast } from '@/components/ui/Toast';
 import { fetchAdminOverview } from '@/features/admin/api';
 import type { AdminOverview } from '@/features/admin/types';
+import { formatNumber } from '@/utils/formatCurrency';
 
 const COLORS = ['#0D9488', '#2563EB', '#F59E0B', '#DC2626'];
 
@@ -180,7 +181,7 @@ export const AdminDashboard = () => {
                                 {overview.watchlist.length > 0 ? overview.watchlist.map((item) => (
                                     <tr key={item.id}>
                                         <td className="py-4 font-medium text-light-text-primary dark:text-dark-text-primary">{item.applicant}</td>
-                                        <td className="py-4 text-light-text-secondary dark:text-dark-text-secondary">LKR {item.amount.toLocaleString()}</td>
+                                        <td className="py-4 text-light-text-secondary dark:text-dark-text-secondary">LKR {formatNumber(item.amount)}</td>
                                         <td className="py-4"><Badge variant={riskBadge[item.riskLevel]}>{item.riskLevel}</Badge></td>
                                         <td className="py-4 text-light-text-secondary dark:text-dark-text-secondary">{item.reason}</td>
                                     </tr>

@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { CheckCircle, XCircle, Download, FileText, ArrowLeft, Loader2, Info } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
+import { formatNumber } from '@/utils/formatCurrency';
 
 interface RiskSummary {
     overallRiskScore: number;
@@ -188,15 +189,15 @@ export const ApplicationVerification = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12">
                             <div>
                                 <p className="text-xs text-gray-500 mb-1">Gross Monthly Income</p>
-                                <p className="text-sm font-medium">LKR {app.grossMonthlyIncome?.toLocaleString()}</p>
+                                <p className="text-sm font-medium">LKR {formatNumber(app.grossMonthlyIncome)}</p>
                             </div>
                             <div>
                                 <p className="text-xs text-gray-500 mb-1">Net Monthly Income</p>
-                                <p className="text-sm font-medium">LKR {app.netMonthlyIncome?.toLocaleString()}</p>
+                                <p className="text-sm font-medium">LKR {formatNumber(app.netMonthlyIncome)}</p>
                             </div>
                             <div>
                                 <p className="text-xs text-gray-500 mb-1">Existing Loan Commitments</p>
-                                <p className="text-sm font-medium">LKR {app.existingLoanCommitments?.toLocaleString() || 0}</p>
+                                <p className="text-sm font-medium">LKR {formatNumber(app.existingLoanCommitments) || 0}</p>
                             </div>
                             <div>
                                 <p className="text-xs text-gray-500 mb-1">Service Period</p>
@@ -215,7 +216,7 @@ export const ApplicationVerification = () => {
                             </div>
                             <div>
                                 <p className="text-xs text-gray-500 mb-1">Requested Amount</p>
-                                <p className="text-sm font-medium">LKR {app.loanAmount?.toLocaleString()}</p>
+                                <p className="text-sm font-medium">LKR {formatNumber(app.loanAmount)}</p>
                             </div>
                             <div>
                                 <p className="text-xs text-gray-500 mb-1">Duration</p>

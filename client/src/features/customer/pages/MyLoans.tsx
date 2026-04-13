@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { FileText, Clock, ChevronDown, ChevronUp, ArrowLeft, Download } from 'lucide-react';
 import jsPDF from 'jspdf';
+import { formatNumber } from '@/utils/formatCurrency';
 
 interface PaymentRecord {
     date: string;
@@ -161,9 +162,9 @@ export const MyLoans = () => {
 
             // Details
             doc.setFontSize(8); doc.setFont('helvetica', 'normal');
-            doc.text(`Original Amount: LKR ${loan.amount.toLocaleString()}`, margin, y);
-            doc.text(`Total Paid: LKR ${loan.paid.toLocaleString()}`, margin + 60, y);
-            doc.text(`Remaining Balance: LKR ${loan.balance.toLocaleString()}`, margin + 120, y);
+            doc.text(`Original Amount: LKR ${formatNumber(loan.amount)}`, margin, y);
+            doc.text(`Total Paid: LKR ${formatNumber(loan.paid)}`, margin + 60, y);
+            doc.text(`Remaining Balance: LKR ${formatNumber(loan.balance)}`, margin + 120, y);
             y += 8;
 
             // Payment Table
@@ -187,7 +188,7 @@ export const MyLoans = () => {
                 loan.paymentHistory.forEach(pmt => {
                     const pDate = new Date(pmt.date).toLocaleDateString('en-US');
                     doc.text(pDate, margin, y);
-                    doc.text(`LKR ${pmt.amount.toLocaleString()}`, margin + 40, y);
+                    doc.text(`LKR ${formatNumber(pmt.amount)}`, margin + 40, y);
                     doc.text('Completed', margin + 80, y);
                     y += 5;
                     // Check page break during rows
@@ -269,7 +270,7 @@ export const MyLoans = () => {
                                 <div className="text-left md:text-right">
                                     <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">Original Amount</p>
                                     <p className="text-2xl font-bold text-light-text-primary dark:text-dark-text-primary">
-                                        LKR {loan.amount.toLocaleString()}
+                                        LKR {formatNumber(loan.amount)}
                                     </p>
                                 </div>
                             </div>
@@ -287,8 +288,8 @@ export const MyLoans = () => {
                                         />
                                     </div>
                                     <div className="flex justify-between text-xs text-light-text-muted dark:text-dark-text-muted">
-                                        <span>LKR {loan.paid.toLocaleString()} paid</span>
-                                        <span>LKR {loan.balance.toLocaleString()} remaining</span>
+                                        <span>LKR {formatNumber(loan.paid)} paid</span>
+                                        <span>LKR {formatNumber(loan.balance)} remaining</span>
                                     </div>
                                 </div>
 
@@ -297,7 +298,7 @@ export const MyLoans = () => {
                                         <div>
                                             <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary">Next Payment</p>
                                             <p className="text-lg font-semibold text-light-text-primary dark:text-dark-text-primary">
-                                                LKR {loan.nextPayment.toLocaleString()}
+                                                LKR {formatNumber(loan.nextPayment)}
                                             </p>
                                         </div>
                                         <div>
@@ -351,7 +352,7 @@ export const MyLoans = () => {
                                                         <p className="text-xs text-slate-500">{new Date(pmt.date).toLocaleDateString()} at {new Date(pmt.date).toLocaleTimeString()}</p>
                                                     </div>
                                                     <div className="text-right">
-                                                        <p className="font-semibold text-green-600 dark:text-green-400">+ LKR {pmt.amount.toLocaleString()}</p>
+                                                        <p className="font-semibold text-green-600 dark:text-green-400">+ LKR {formatNumber(pmt.amount)}</p>
                                                     </div>
                                                 </div>
                                             ))}
@@ -377,7 +378,7 @@ export const MyLoans = () => {
                             </div>
                             <div>
                                 <p className="text-sm text-slate-500">Remaining Balance</p>
-                                <p className="font-medium">LKR {selectedLoan.balance.toLocaleString()}</p>
+                                <p className="font-medium">LKR {formatNumber(selectedLoan.balance)}</p>
                             </div>
                             <div>
                                 <Input 

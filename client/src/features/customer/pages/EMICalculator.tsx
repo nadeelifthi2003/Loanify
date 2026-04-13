@@ -6,6 +6,7 @@ import { ArrowLeft } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useToast } from '@/components/ui/Toast';
+import { formatNumber } from '@/utils/formatCurrency';
 
 export const EMICalculator = () => {
     const { theme } = useTheme();
@@ -227,7 +228,7 @@ export const EMICalculator = () => {
                                         <Cell key={`cell-${index}`} fill={theme === 'dark' ? DARK_COLORS[index % COLORS.length] : COLORS[index % COLORS.length]} />
                                     ))}
                                 </Pie>
-                                <Tooltip formatter={(value: number | string | Array<number | string> | undefined) => `${currency} ${(value as number)?.toLocaleString()}`} />
+                                <Tooltip formatter={(value: number | string | Array<number | string> | undefined) => `${currency} ${formatNumber(value as number)}`} />
                                 <Legend />
                             </PieChart>
                         </ResponsiveContainer>
@@ -237,19 +238,19 @@ export const EMICalculator = () => {
                         <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
                             <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary mb-1">Monthly EMI</p>
                             <p className="font-bold text-primary text-lg">
-                                {currency} {monthlyPayment.toLocaleString()}
+                                {currency} {formatNumber(monthlyPayment)}
                             </p>
                         </div>
                         <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
                             <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary mb-1">Total Interest</p>
                             <p className="font-bold text-light-text-primary dark:text-dark-text-primary text-sm">
-                                {currency} {totalInterest.toLocaleString()}
+                                {currency} {formatNumber(totalInterest)}
                             </p>
                         </div>
                         <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
                             <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary mb-1">Total Amount</p>
                             <p className="font-bold text-light-text-primary dark:text-dark-text-primary text-sm">
-                                {currency} {totalPayment.toLocaleString()}
+                                {currency} {formatNumber(totalPayment)}
                             </p>
                         </div>
                     </div>

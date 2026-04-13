@@ -2,6 +2,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { CheckCircle, XCircle, AlertTriangle, Info, TrendingUp, Home, FileText } from 'lucide-react';
+import { formatNumber } from '@/utils/formatCurrency';
 
 interface RiskFactor {
     label: string;
@@ -96,7 +97,7 @@ export const EligibilityResult = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
                     { label: 'Eligibility Score', value: `${result.eligibilityScore}/100`, sub: 'Composite' },
-                    { label: 'Estimated EMI', value: `LKR ${result.estimatedEMI.toLocaleString()}`, sub: 'per month' },
+                    { label: 'Estimated EMI', value: `LKR ${formatNumber(result.estimatedEMI)}`, sub: 'per month' },
                     { label: 'Debt-to-Income', value: `${result.dti}%`, sub: result.dtiCategory },
                     { label: 'Doc Bonus', value: result.documentBonus > 0 ? `+${result.documentBonus} pts` : '0 pts', sub: result.documentBonus > 0 ? 'Income Verified' : 'Upload docs for bonus' },
                 ].map((m, i) => (
@@ -196,7 +197,7 @@ export const EligibilityResult = () => {
                     <div className="mt-4 p-3 bg-white/60 dark:bg-gray-900/40 rounded-lg">
                         <p className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">Maximum Recommended Loan</p>
                         <p className="text-lg font-bold text-indigo-900 dark:text-indigo-100 mt-0.5">
-                            {result.maxRecommendedLoan.toLocaleString()}
+                            LKR {formatNumber(result.maxRecommendedLoan)}
                         </p>
                     </div>
                 )}

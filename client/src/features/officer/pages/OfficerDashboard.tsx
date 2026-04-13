@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { FileText, Users, AlertTriangle, TrendingUp, ChevronRight } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { formatNumber } from '@/utils/formatCurrency';
 
 export const OfficerDashboard = () => {
     const navigate = useNavigate();
@@ -126,7 +127,7 @@ export const OfficerDashboard = () => {
                                     <div>
                                         <p className="font-medium">{app.fullName}</p>
                                         <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary">
-                                            {app.loanType} • LKR {app.loanAmount?.toLocaleString()}
+                                            {app.loanType} • LKR {formatNumber(app.loanAmount)}
                                         </p>
                                     </div>
                                 </div>

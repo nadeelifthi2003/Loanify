@@ -4,10 +4,10 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { ChevronRight, Check, AlertCircle, ArrowLeft, X, Upload, FileText } from 'lucide-react';
+import { useToast } from '@/components/ui/Toast';
+import { formatNumber } from '@/utils/formatCurrency';
 
 const steps = ['Personal Info', 'Loan Details', 'Documents', 'Review'];
-
-import { useToast } from '@/components/ui/Toast';
 
 export const LoanApplication = () => {
     const { showToast } = useToast();
@@ -363,6 +363,11 @@ export const LoanApplication = () => {
                                             onChange={handleInputChange}
                                             error={errors.annualIncome}
                                         />
+                                        {formData.annualIncome && Number(formData.annualIncome) > 0 && (
+                                            <p className="text-xs text-primary font-semibold mt-1 pl-1 flex items-center gap-1">
+                                                <span className="text-slate-400">=</span> {formData.incomeCurrency} {formatNumber(Number(formData.annualIncome))}
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -427,6 +432,11 @@ export const LoanApplication = () => {
                                         onChange={handleInputChange}
                                         error={errors.loanAmount}
                                     />
+                                    {formData.loanAmount && Number(formData.loanAmount) > 0 && (
+                                        <p className="text-xs text-primary font-semibold mt-1 pl-1 flex items-center gap-1">
+                                            <span className="text-slate-400">=</span> {formData.loanCurrency} {formatNumber(Number(formData.loanAmount))}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -645,15 +655,15 @@ export const LoanApplication = () => {
                             <div className="grid grid-cols-2 gap-2">
                                 <p><strong>Full Name:</strong> {formData.firstName} {formData.lastName}</p>
                                 <p><strong>NIC:</strong> {formData.nic}</p>
-                                <p><strong>Loan Amount:</strong> {formData.loanCurrency} {formData.loanAmount}</p>
+                                <p><strong>Loan Amount:</strong> {formData.loanCurrency} {formatNumber(formData.loanAmount)}</p>
                                 <p><strong>Term:</strong> {formData.loanTerm} Months</p>
                                 <p><strong>Purpose:</strong> {formData.loanPurpose}</p>
-                                <p><strong>Annual Income:</strong> {formData.incomeCurrency} {formData.annualIncome}</p>
+                                <p><strong>Annual Income:</strong> {formData.incomeCurrency} {formatNumber(formData.annualIncome)}</p>
                                 <p><strong>Residential Status:</strong> {formData.residentialStatus}</p>
                                 <p><strong>Employment:</strong> {formData.employmentStatus}</p>
                                 <p><strong>Service Period:</strong> {formData.servicePeriod}</p>
                                 <p><strong>Dependents:</strong> {formData.dependents}</p>
-                                <p><strong>Existing Monthly Commitments:</strong> LKR {Number(formData.existingLoanCommitments || 0).toLocaleString()}</p>
+                                <p><strong>Existing Monthly Commitments:</strong> LKR {formatNumber(Number(formData.existingLoanCommitments || 0))}</p>
                             </div>
                         </div>
                     </div>

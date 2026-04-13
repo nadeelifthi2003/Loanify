@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Search, Filter, ChevronRight } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
+import { formatNumber } from '@/utils/formatCurrency';
 
 export const ApplicationsList = () => {
     const navigate = useNavigate();
@@ -114,7 +115,7 @@ export const ApplicationsList = () => {
                                     <td className="px-4 py-3 font-medium text-light-text-primary dark:text-dark-text-primary">{app.id}</td>
                                     <td className="px-4 py-3">{app.fullName}</td>
                                     <td className="px-4 py-3 text-light-text-secondary dark:text-dark-text-secondary">{app.loanType}</td>
-                                    <td className="px-4 py-3 font-medium">LKR {app.loanAmount?.toLocaleString()}</td>
+                                    <td className="px-4 py-3 font-medium">LKR {formatNumber(app.loanAmount)}</td>
                                     <td className="px-4 py-3 text-light-text-secondary dark:text-dark-text-secondary">
                                         {new Date(app.date || app.createdAt).toLocaleDateString()}
                                     </td>
