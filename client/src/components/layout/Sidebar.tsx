@@ -16,12 +16,12 @@ import {
 interface SidebarProps {
     isOpen: boolean;
     onClose: () => void;
-    role?: 'customer' | 'officer' | 'admin';
+    role?: 'customer' | 'officer' | 'admin' | 'manager';
 }
 
 export const Sidebar = ({ isOpen, onClose, role = 'customer' }: SidebarProps) => {
     const location = useLocation();
-    const { logout } = useAuth();
+    const { user, logout } = useAuth();
 
     const customerLinks = [
         { icon: LayoutDashboard, label: 'Dashboard', path: '/customer' },
@@ -34,6 +34,7 @@ export const Sidebar = ({ isOpen, onClose, role = 'customer' }: SidebarProps) =>
     const officerLinks = [
         { icon: LayoutDashboard, label: 'Dashboard', path: '/officer' },
         { icon: ClipboardList, label: 'Applications', path: '/officer/applications' },
+        ...(user?.role === 'manager' ? [{ icon: ClipboardList, label: 'Manager Reviews', path: '/officer/manager-reviews' }] : []),
         { icon: ShieldAlert, label: 'Risk Assessment', path: '/officer/risk' },
         { icon: Users, label: 'Customers', path: '/officer/customers' },
         { icon: Settings, label: 'Settings', path: '/officer/settings' },

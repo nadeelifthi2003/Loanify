@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { Mail, Lock, ArrowRight, UserCircle, Briefcase, ShieldCheck } from 'lucide-react';
 
-type Role = 'customer' | 'officer' | 'admin';
+type Role = 'customer' | 'officer' | 'admin' | 'manager';
 
 export const Login = () => {
     // const navigate = useNavigate(); // Removed as we use login from context which handles navigation but actually context handles it. 
@@ -27,6 +27,7 @@ export const Login = () => {
     const roles = [
         { id: 'customer', label: 'Customer', icon: UserCircle },
         { id: 'officer', label: 'Loan Officer', icon: Briefcase },
+        { id: 'manager', label: 'Manager', icon: Briefcase },
         { id: 'admin', label: 'Administrator', icon: ShieldCheck },
     ] as const;
 

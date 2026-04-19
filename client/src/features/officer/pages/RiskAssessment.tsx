@@ -54,6 +54,7 @@ export const RiskAssessment = () => {
     const { id } = useParams();
     const [riskData, setRiskData] = useState<RiskAssessmentData | null>(null);
     const [loading, setLoading] = useState(true);
+    const [isFlagging, setIsFlagging] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const noteRef = useRef<HTMLTextAreaElement>(null);
 
@@ -215,6 +216,30 @@ export const RiskAssessment = () => {
         showToast('PDF report downloaded successfully', 'success');
     };
 
+    const handleFlagForReview = async () => {
+        setIsFlagging(true);
+        try {
+            const res = await fetch(`http://localhost:5000/api/officer/applications/${id}/status`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'Manager Review' })
+            });
+            const data = await res.json();
+            
+            if (res.ok) {
+                showToast('Application successfully escalated to Manager Review', 'success');
+                navigate('/officer/applications');
+            } else {
+                showToast(data.message || 'Failed to flag application', 'error');
+            }
+        } catch (error) {
+            console.error('Status update failed:', error);
+            showToast('Network error while flagging application', 'error');
+        } finally {
+            setIsFlagging(false);
+        }
+    };
+
     useEffect(() => {
         const fetchRiskData = async () => {
             try {
@@ -308,7 +333,7 @@ export const RiskAssessment = () => {
                     <Button variant="outline" leftIcon={<Download className="w-4 h-4" />} onClick={downloadReport}>
                         Download Report
                     </Button>
-                    <Button variant="danger" leftIcon={<Flag className="w-4 h-4" />} onClick={() => showToast('Application flagged for secondary review', 'warning')}>
+                    <Button variant="danger" leftIcon={<Flag className="w-4 h-4" />} isLoading={isFlagging} onClick={handleFlagForReview}>
                         Flag for Review
                     </Button>
                 </div>
@@ -379,7 +404,7 @@ export const RiskAssessment = () => {
                     <Card className="p-6 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/10 dark:to-indigo-900/10 border-indigo-100 dark:border-indigo-900">
                         <div className="flex items-center gap-2 mb-4">
                             <Briefcase className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                            <h2 className="text-base font-medium text-indigo-900 dark:text-indigo-300">Python Based AI Insights</h2>
+                            <h2 className="text-base font-medium text-indigo-900 dark:text-indigo-300">Loanify Risk Intelligence</h2>
                         </div>
                         <ul className="space-y-2">
                             {riskData.insights.map((insight, idx) => (

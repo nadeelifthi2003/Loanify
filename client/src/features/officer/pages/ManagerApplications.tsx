@@ -8,7 +8,7 @@ import { Search, Filter, ChevronRight } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { formatNumber } from '@/utils/formatCurrency';
 
-export const ApplicationsList = () => {
+export const ManagerApplications = () => {
     const navigate = useNavigate();
     const { showToast } = useToast();
     const [searchTerm, setSearchTerm] = useState('');
@@ -20,7 +20,9 @@ export const ApplicationsList = () => {
             try {
                 const res = await fetch('http://localhost:5000/api/officer/applications');
                 if (res.ok) {
-                    setApplications(await res.json());
+                    const data = await res.json();
+                    // Manager only sees applications pending manager review
+                    setApplications(data.filter((app: any) => app.status === 'Manager Review'));
                 }
             } catch (err) {
                 console.error("Error fetching applications:", err);
@@ -31,19 +33,6 @@ export const ApplicationsList = () => {
         fetchApps();
     }, []);
 
-    const getStatusBadge = (status: string) => {
-        switch (status?.toLowerCase()) {
-            case 'approved': return 'success';
-            case 'manager approved': return 'success';
-            case 'rejected': return 'error';
-            case 'manager rejected': return 'error';
-            case 'manager review': return 'warning';
-            case 'needs info': return 'warning';
-            case 'pending': return 'info';
-            default: return 'info';
-        }
-    };
-
     const filteredApplications = applications.filter(app => {
         const search = searchTerm.toLowerCase();
         return (
@@ -53,38 +42,16 @@ export const ApplicationsList = () => {
         );
     });
 
-    const exportToCSV = () => {
-        if (filteredApplications.length === 0) {
-            showToast('No data to export', 'warning');
-            return;
-        }
-        const headers = ['Application ID,Applicant,Type,Amount,Date,Status'];
-        const csvData = headers.concat(filteredApplications.map(app => 
-            `${app.id},"${app.fullName}",${app.loanType},${app.loanAmount},${new Date(app.date || app.createdAt).toLocaleDateString()},${app.status}`
-        )).join('\n');
-        
-        const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', 'loan_applications.csv');
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        showToast('Export triggered successfully', 'success');
-    };
-
-    if (loading) return <div className="p-8 text-center text-gray-500 animate-pulse">Loading applications...</div>;
+    if (loading) return <div className="p-8 text-center text-gray-500 animate-pulse">Loading Manager Reviews...</div>;
 
     return (
         <div className="space-y-6 animate-fade-in text-light-text-primary dark:text-dark-text-primary">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <h1 className="text-2xl font-bold">
-                    Loan Applications
-                </h1>
-                <div className="flex gap-2">
-                    <Button variant="outline" leftIcon={<Filter className="w-4 h-4" />} onClick={() => showToast('Advanced filtering coming soon!', 'info')}>Filter</Button>
-                    <Button onClick={exportToCSV}>Export</Button>
+                <div>
+                    <h1 className="text-2xl font-bold">
+                        Manager Approvals
+                    </h1>
+                    <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mt-1">High-value loans awaiting your final approval</p>
                 </div>
             </div>
 
@@ -107,7 +74,6 @@ export const ApplicationsList = () => {
                                 <th className="px-4 py-3">Type</th>
                                 <th className="px-4 py-3">Amount</th>
                                 <th className="px-4 py-3">Date</th>
-                                <th className="px-4 py-3">Risk Level</th>
                                 <th className="px-4 py-3">Status</th>
                                 <th className="px-4 py-3 rounded-r-lg">Action</th>
                             </tr>
@@ -118,36 +84,31 @@ export const ApplicationsList = () => {
                                     <td className="px-4 py-3 font-medium text-light-text-primary dark:text-dark-text-primary">{app.id}</td>
                                     <td className="px-4 py-3">{app.fullName}</td>
                                     <td className="px-4 py-3 text-light-text-secondary dark:text-dark-text-secondary">{app.loanType}</td>
-                                    <td className="px-4 py-3 font-medium">LKR {formatNumber(app.loanAmount)}</td>
+                                    <td className="px-4 py-3 font-bold text-amber-600">LKR {formatNumber(app.loanAmount)}</td>
                                     <td className="px-4 py-3 text-light-text-secondary dark:text-dark-text-secondary">
                                         {new Date(app.date || app.createdAt).toLocaleDateString()}
                                     </td>
                                     <td className="px-4 py-3">
-                                        <Badge variant={app.loanAmount > 100000 ? 'error' : app.loanAmount > 50000 ? 'warning' : 'success'} size="sm">
-                                            {app.loanAmount > 100000 ? 'HIGH' : app.loanAmount > 50000 ? 'MEDIUM' : 'LOW'}
-                                        </Badge>
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <Badge variant={getStatusBadge(app.status)} size="sm" className="capitalize">
+                                        <Badge variant="warning" size="sm" className="capitalize">
                                             {app.status}
                                         </Badge>
                                     </td>
                                     <td className="px-4 py-3">
                                         <Button
                                             size="sm"
-                                            variant="ghost"
+                                            variant="primary"
                                             rightIcon={<ChevronRight className="w-4 h-4" />}
-                                            onClick={() => navigate(`/officer/application/${app.id}`)}
+                                            onClick={() => navigate(`/officer/manager-reviews/${app.id}`)}
                                         >
-                                            View
+                                            Review
                                         </Button>
                                     </td>
                                 </tr>
                             ))}
                             {filteredApplications.length === 0 && (
                                 <tr>
-                                    <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
-                                        No applications match your search.
+                                    <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                                        No applications pending manager review.
                                     </td>
                                 </tr>
                             )}
@@ -158,4 +119,3 @@ export const ApplicationsList = () => {
         </div>
     );
 };
-

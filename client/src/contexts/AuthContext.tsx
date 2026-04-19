@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-type Role = 'customer' | 'officer' | 'admin';
+type Role = 'customer' | 'officer' | 'admin' | 'manager';
 
 interface User {
     id: string;
@@ -55,6 +55,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // Navigation logic based on role
         switch (role) {
             case 'officer':
+            case 'manager':
                 navigate('/officer');
                 break;
             case 'admin':

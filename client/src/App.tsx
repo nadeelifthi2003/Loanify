@@ -21,6 +21,8 @@ import { ApplicationVerification } from '@/features/officer/pages/ApplicationVer
 import { RiskAssessment } from '@/features/officer/pages/RiskAssessment';
 import { CustomersList } from '@/features/officer/pages/CustomersList';
 import { OfficerSettings } from '@/features/officer/pages/OfficerSettings';
+import { ManagerApplications } from '@/features/officer/pages/ManagerApplications';
+import { ManagerApplicationVerification } from '@/features/officer/pages/ManagerApplicationVerification';
 
 import { AdminDashboard } from '@/features/admin/pages/AdminDashboard';
 import { UserManagement } from '@/features/admin/pages/UserManagement';
@@ -68,6 +70,8 @@ function App() {
                 <Route index element={<OfficerDashboard />} />
                 <Route path="applications" element={<ApplicationsList />} />
                 <Route path="application/:id" element={<ApplicationVerification />} />
+                <Route path="manager-reviews" element={<ManagerApplications />} />
+                <Route path="manager-reviews/:id" element={<ManagerApplicationVerification />} />
                 <Route path="application/:id/risk" element={<RiskAssessment />} />
                 <Route path="risk" element={<RiskAssessment />} />
                 <Route path="customers" element={<CustomersList />} />

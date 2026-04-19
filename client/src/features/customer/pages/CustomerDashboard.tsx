@@ -67,7 +67,7 @@ export const CustomerDashboard = () => {
         fetchApplications();
     }, []);
 
-    const activeLoans = recentApplications.filter(app => app.status === 'Approved');
+    const activeLoans = recentApplications.filter(app => app.status === 'Approved' || app.status === 'Manager Approved');
     const totalActiveLoans = activeLoans.length;
     
     let totalActiveBalance = 0;
@@ -92,9 +92,9 @@ export const CustomerDashboard = () => {
         : 'Update Pending';
 
     const getStatusVariant = (status: string) => (
-        status === 'Approved'
+        (status === 'Approved' || status === 'Manager Approved')
             ? 'success'
-            : status === 'Rejected'
+            : (status === 'Rejected' || status === 'Manager Rejected')
                 ? 'error'
                 : status === 'Needs Info'
                     ? 'warning'
@@ -214,7 +214,7 @@ export const CustomerDashboard = () => {
                                             <Badge variant={getStatusVariant(app.status)} size="sm">
                                                 {app.status}
                                             </Badge>
-                                            {app.eligibilityResult && (
+                                            {app.eligibilityResult && !['Approved', 'Manager Approved', 'Rejected', 'Manager Rejected'].includes(app.status) && (
                                                 <Badge variant={getVerdictVariant(app.eligibilityResult.verdict)} size="sm">
                                                     {app.eligibilityResult.verdict}
                                                 </Badge>
@@ -231,28 +231,42 @@ export const CustomerDashboard = () => {
                 <div className="space-y-4">
                     <h2 className="text-lg font-semibold text-light-text-primary dark:text-dark-text-primary">Notifications</h2>
                     <Card className="p-4 space-y-4">
-                        <div className="flex gap-3">
-                            <div className="w-2 h-2 rounded-full bg-red-500 mt-2 shrink-0" />
-                            <div>
-                                <p className="text-sm font-medium text-light-text-primary dark:text-dark-text-primary">Payment Due Soon</p>
-                                <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary mt-1">
-                                    Your total EMI of LKR {formatNumber(totalNextPayment)} is due soon.
-                                </p>
-                                <Link to="/customer/loans">
-                                    <Button size="sm" variant="outline" className="mt-2 w-full">Pay Now</Button>
-                                </Link>
+                        {totalNextPayment > 0 && (
+                            <div className="flex gap-3">
+                                <div className="w-2 h-2 rounded-full bg-red-500 mt-2 shrink-0" />
+                                <div>
+                                    <p className="text-sm font-medium text-light-text-primary dark:text-dark-text-primary">Payment Due Soon</p>
+                                    <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary mt-1">
+                                        Your total EMI of LKR {formatNumber(totalNextPayment)} is due soon.
+                                    </p>
+                                    <Link to="/customer/loans">
+                                        <Button size="sm" variant="outline" className="mt-2 w-full">Pay Now</Button>
+                                    </Link>
+                                </div>
                             </div>
-                        </div>
-                        <div className="h-px bg-light-border dark:bg-dark-border" />
-                        <div className="flex gap-3">
-                            <div className="w-2 h-2 rounded-full bg-teal mt-2 shrink-0" />
-                            <div>
-                                <p className="text-sm font-medium text-light-text-primary dark:text-dark-text-primary">Loan Approved</p>
-                                <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary mt-1">
-                                    Your application for Home Renovation Loan has been approved.
-                                </p>
+                        )}
+                        
+                        {totalNextPayment > 0 && activeLoans.length > 0 && (
+                            <div className="h-px bg-light-border dark:bg-dark-border" />
+                        )}
+
+                        {activeLoans.length > 0 && (
+                            <div className="flex gap-3">
+                                <div className="w-2 h-2 rounded-full bg-teal mt-2 shrink-0" />
+                                <div>
+                                    <p className="text-sm font-medium text-light-text-primary dark:text-dark-text-primary">Loan Approved</p>
+                                    <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary mt-1">
+                                        Your application for {activeLoans[0]?.loanPurpose || 'Loan'} has been approved.
+                                    </p>
+                                </div>
                             </div>
-                        </div>
+                        )}
+
+                        {totalNextPayment === 0 && activeLoans.length === 0 && (
+                            <div className="py-6 text-center">
+                                <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">No new notifications at this time.</p>
+                            </div>
+                        )}
                     </Card>
                 </div>
             </div>

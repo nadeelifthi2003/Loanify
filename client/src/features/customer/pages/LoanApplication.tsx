@@ -467,16 +467,23 @@ export const LoanApplication = () => {
                             onChange={handleInputChange}
                             error={errors.dependents}
                         />
-                        <Input
-                            label="Existing Monthly Loan Commitments (LKR)"
-                            type="number"
-                            min="0"
-                            placeholder="0"
-                            name="existingLoanCommitments"
-                            value={formData.existingLoanCommitments}
-                            onChange={handleInputChange}
-                            error={errors.existingLoanCommitments}
-                        />
+                        <div>
+                            <Input
+                                label="Existing Monthly Loan Commitments (LKR)"
+                                type="number"
+                                min="0"
+                                placeholder="0"
+                                name="existingLoanCommitments"
+                                value={formData.existingLoanCommitments}
+                                onChange={handleInputChange}
+                                error={errors.existingLoanCommitments}
+                            />
+                            {formData.existingLoanCommitments && Number(formData.existingLoanCommitments) > 0 && (
+                                <p className="text-xs text-primary font-semibold mt-1 pl-1 flex items-center gap-1">
+                                    <span className="text-slate-400">=</span> LKR {formatNumber(Number(formData.existingLoanCommitments))}
+                                </p>
+                            )}
+                        </div>
                     </div>
                 )}
 

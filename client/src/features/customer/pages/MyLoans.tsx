@@ -44,7 +44,7 @@ export const MyLoans = () => {
             const data = await res.json();
             
             const activeLoans: Loan[] = data
-                .filter((app: any) => app.status === 'Approved')
+                .filter((app: any) => app.status === 'Approved' || app.status === 'Manager Approved')
                 .map((app: any) => {
                     const paid = app.paidAmount || 0;
                     const amount = app.loanAmount;

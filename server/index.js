@@ -347,8 +347,8 @@ app.post('/api/applications/:id/pay', async (req, res) => {
             return res.status(404).json({ status: 'error', message: 'Application not found' });
         }
 
-        if (application.status !== 'Approved') {
-            return res.status(400).json({ status: 'error', message: 'Can only make payments on Approved loans' });
+        if (application.status !== 'Approved' && application.status !== 'Manager Approved') {
+            return res.status(400).json({ status: 'error', message: 'Can only make payments on approved loans' });
         }
 
         application.paidAmount = (application.paidAmount || 0) + paymentAmount;
@@ -423,8 +423,8 @@ app.get('/api/officer/applications/:id', async (req, res) => {
  */
 app.put('/api/officer/applications/:id/status', async (req, res) => {
     try {
-        const { status } = req.body;
-        const validStatuses = ['Pending', 'Approved', 'Rejected', 'Needs Info'];
+        const { status, role } = req.body;
+        const validStatuses = ['Pending', 'Approved', 'Rejected', 'Needs Info', 'Manager Review', 'Manager Rejected', 'Manager Approved'];
         if (!validStatuses.includes(status)) {
             return res.status(400).json({ status: 'error', message: 'Invalid status provided' });
         }
@@ -434,13 +434,55 @@ app.put('/api/officer/applications/:id/status', async (req, res) => {
             return res.status(404).json({ status: 'error', message: 'Application not found' });
         }
 
-        application.status = status;
+        let finalStatus = status;
 
-        if (status === 'Approved' && !application.nextDueDate) {
+        // ── Eligibility Guard ────────────────────────────────────────────────
+        // If the application's eligibility verdict is "Not Eligible", the loan
+        // officer CANNOT approve or escalate. The system forces a Rejection.
+        const eligibilityVerdict = application.eligibilityResult?.verdict;
+        if (
+            eligibilityVerdict === 'Not Eligible' &&
+            (status === 'Approved' || status === 'Manager Review')
+        ) {
+            return res.status(422).json({
+                status: 'error',
+                message: 'This application was assessed as Not Eligible by the system. Approval or escalation is not permitted. The application must be Rejected.'
+            });
+        }
+
+        // ── Invalid Document Guard ───────────────────────────────────────────
+        // Applications with one or more Invalid documents cannot be approved or
+        // escalated to Manager Review. The officer must reject or request more info.
+        const hasInvalidDocuments = (application.documents || []).some(
+            doc => doc.status === 'Invalid'
+        );
+        if (
+            hasInvalidDocuments &&
+            (status === 'Approved' || status === 'Manager Review')
+        ) {
+            const invalidDocs = application.documents
+                .filter(doc => doc.status === 'Invalid')
+                .map(doc => doc.fileName)
+                .join(', ');
+            return res.status(422).json({
+                status: 'error',
+                message: `Application contains invalid documents: ${invalidDocs}. Approval or escalation is not permitted until all documents are valid.`
+            });
+        }
+
+        // ── Escalation Rule ─────────────────────────────────────────────────
+        // Loans ≥ LKR 1,000,000 must always go to Manager Review first.
+        if (role !== 'manager' && status === 'Approved' && application.loanAmount >= 1000000) {
+            finalStatus = 'Manager Review';
+        }
+
+        application.status = finalStatus;
+
+        if ((finalStatus === 'Approved' || finalStatus === 'Manager Approved') && !application.nextDueDate) {
             // Find all other Approved applications for this customer to check existing due dates
             const existingApps = await Application.find({ 
                 nic: application.nic, 
-                status: 'Approved', 
+                status: { $in: ['Approved', 'Manager Approved'] }, 
                 id: { $ne: application.id } 
             });
             
@@ -471,7 +513,7 @@ app.put('/api/officer/applications/:id/status', async (req, res) => {
         }
 
         await application.save();
-        res.json({ status: 'success', message: `Application status updated to ${status}`, application });
+        res.json({ status: 'success', message: `Application status updated to ${finalStatus}`, application });
     } catch (error) {
         console.error('Error updating application status:', error);
         res.status(500).json({ status: 'error', message: 'Failed to update status', error: error.message });
@@ -594,6 +636,52 @@ app.get('/api/officer/customers/:nic/applications', async (req, res) => {
     } catch (error) {
         console.error('Error fetching customer applications:', error);
         res.status(500).json({ status: 'error', message: 'Failed to fetch customer applications', error: error.message });
+    }
+});
+
+/*
+ * API Endpoint: Get User Notifications
+ * Method: GET
+ * Querystring: role, email
+ */
+app.get('/api/notifications', async (req, res) => {
+    try {
+        const { role, email } = req.query;
+        let notifications = [];
+        const now = new Date();
+
+        if (role === 'customer') {
+            const applications = await Application.find({}).sort({ createdAt: -1 });
+            applications.forEach(app => {
+                if (app.status === 'Approved' || app.status === 'Manager Approved') {
+                    notifications.push({ id: app.id + '-appr', title: 'Loan Approved', description: `Your application for ${app.loanPurpose} has been approved!`, time: app.updatedAt || app.createdAt || now, type: 'success' });
+                } else if (app.status === 'Rejected' || app.status === 'Manager Rejected') {
+                    notifications.push({ id: app.id + '-rej', title: 'Loan Rejected', description: `Your application for ${app.loanPurpose} was not approved.`, time: app.updatedAt || app.createdAt || now, type: 'error' });
+                } else if (app.status === 'Pending' || app.status === 'Manager Review') {
+                    notifications.push({ id: app.id + '-pend', title: 'Application Under Review', description: `Your application for ${app.loanPurpose} is currently being reviewed.`, time: app.createdAt || now, type: 'info' });
+                }
+            });
+        } else if (role === 'officer') {
+            const pendingCount = await Application.countDocuments({ status: 'Pending' });
+            if (pendingCount > 0) {
+                notifications.push({ id: 'off-pend', title: 'Pending Reviews', description: `You have ${pendingCount} applications waiting for initial review.`, time: now, type: 'warning' });
+            }
+        } else if (role === 'manager') {
+            const managerCount = await Application.countDocuments({ status: 'Manager Review' });
+            if (managerCount > 0) {
+                notifications.push({ id: 'mgr-rev', title: 'High-Value Escalations', description: `You have ${managerCount} high-value applications requiring approval.`, time: now, type: 'warning' });
+            }
+        } else if (role === 'admin') {
+            notifications.push({ id: 'adm-1', title: 'System Health', description: 'All loan systems are operating normally. Database is perfectly synced.', time: now, type: 'success' });
+            notifications.push({ id: 'adm-2', title: 'Security Log', description: 'No unusual sign-in activity detected today.', time: new Date(Date.now() - 3600000), type: 'info' });
+        }
+
+        // Return top 5 recent notifications
+        notifications = notifications.sort((a, b) => new Date(b.time) - new Date(a.time)).slice(0, 5);
+        res.json(notifications);
+    } catch (error) {
+        console.error('Error fetching notifications:', error);
+        res.status(500).json({ status: 'error', message: 'Failed to fetch notifications', error: error.message });
     }
 });
 

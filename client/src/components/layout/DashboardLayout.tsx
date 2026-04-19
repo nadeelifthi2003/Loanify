@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 interface DashboardLayoutProps {
     children?: React.ReactNode;
-    role?: 'customer' | 'officer' | 'admin';
+    role?: 'customer' | 'officer' | 'admin' | 'manager';
 }
 
 export const DashboardLayout = ({ children, role = 'customer' }: DashboardLayoutProps) => {
@@ -18,13 +18,17 @@ export const DashboardLayout = ({ children, role = 'customer' }: DashboardLayout
         if (!isLoading) {
             if (!isAuthenticated) {
                 navigate('/auth/login');
-            } else if (user?.role !== role) {
-                // Redirect to correct dashboard if role doesn't match
-                switch (user?.role) {
-                    case 'admin': navigate('/admin'); break;
-                    case 'officer': navigate('/officer'); break;
-                    case 'customer': navigate('/customer'); break;
-                    default: navigate('/auth/login');
+            } else {
+                const isRoleMatch = user?.role === role || (role === 'officer' && user?.role === 'manager');
+                if (!isRoleMatch) {
+                    // Redirect to correct dashboard if role doesn't match
+                    switch (user?.role) {
+                        case 'admin': navigate('/admin'); break;
+                        case 'manager':
+                        case 'officer': navigate('/officer'); break;
+                        case 'customer': navigate('/customer'); break;
+                        default: navigate('/auth/login');
+                    }
                 }
             }
         }
@@ -34,7 +38,8 @@ export const DashboardLayout = ({ children, role = 'customer' }: DashboardLayout
         return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
     }
 
-    if (!isAuthenticated || user?.role !== role) return null;
+    const hasAccess = isAuthenticated && (user?.role === role || (role === 'officer' && user?.role === 'manager'));
+    if (!hasAccess) return null;
 
     return (
         <div className="min-h-screen bg-light-bg dark:bg-dark-bg transition-colors duration-200">

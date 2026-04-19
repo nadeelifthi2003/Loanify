@@ -3,7 +3,7 @@ const { randomUUID } = require('crypto');
 const Application = require('../../models/Application');
 const User = require('../../models/User');
 
-const ROLE_OPTIONS = ['customer', 'officer', 'admin'];
+const ROLE_OPTIONS = ['customer', 'officer', 'admin', 'manager'];
 const STATUS_OPTIONS = ['active', 'disabled', 'pending'];
 
 const seedTimestamp = () => new Date();
@@ -40,6 +40,18 @@ const DEFAULT_USERS = [
         permissions: ['manage_users', 'view_reports'],
         notes: 'Monitors fraud, escalations, and service levels.',
         lastActiveAt: new Date(Date.now() - 45 * 60 * 1000),
+    }),
+    seedUser({
+        name: 'Manager Silva',
+        email: 'manager@loanify.com',
+        role: 'manager',
+        status: 'active',
+        branch: 'Head Office',
+        department: 'Loan Operations',
+        phone: '+94 77 555 2000',
+        permissions: ['review_applications', 'approve_high_value'],
+        notes: 'Main loan manager for high-value applications.',
+        lastActiveAt: new Date(Date.now() - 5 * 60 * 1000),
     }),
     seedUser({
         name: 'Kasuni Wijesinghe',
