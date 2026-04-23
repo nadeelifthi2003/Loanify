@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { DollarSign, CreditCard, Calendar, ArrowUpRight, TrendingUp, FileText, CheckCircle, XCircle } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { formatNumber } from '@/utils/formatCurrency';
 
 import { useState, useEffect } from 'react';
@@ -50,22 +50,31 @@ interface Application {
 }
 
 export const CustomerDashboard = () => {
+    const navigate = useNavigate();
     const [recentApplications, setRecentApplications] = useState<Application[]>([]);
     const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
 
-    useEffect(() => {
-        const fetchApplications = async () => {
-            try {
-                const response = await fetch('http://localhost:5000/api/applications/my-applications');
-                const data = await response.json();
-                setRecentApplications(data);
-            } catch (error) {
-                console.error('Error fetching applications:', error);
-            }
-        };
+    const fetchApplications = async () => {
+        try {
+            const response = await fetch('http://localhost:5000/api/applications/my-applications');
+            const data = await response.json();
+            setRecentApplications(data);
+            return data as Application[];
+        } catch (error) {
+            console.error('Error fetching applications:', error);
+            return [];
+        }
+    };
 
-        fetchApplications();
+    useEffect(() => {
+        void fetchApplications();
     }, []);
+
+    const openApplicationResult = async (applicationId: string) => {
+        const applications = await fetchApplications();
+        const latestApplication = applications.find((entry) => entry.id === applicationId);
+        setSelectedApplication(latestApplication || recentApplications.find((entry) => entry.id === applicationId) || null);
+    };
 
     const activeLoans = recentApplications.filter(app => app.status === 'Approved' || app.status === 'Manager Approved');
     const totalActiveLoans = activeLoans.length;
@@ -190,7 +199,7 @@ export const CustomerDashboard = () => {
                                 <button
                                     key={app.id}
                                     type="button"
-                                    onClick={() => setSelectedApplication(app)}
+                                    onClick={() => void openApplicationResult(app.id)}
                                     className="w-full p-4 flex items-center justify-between text-left hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
                                 >
                                     <div className="flex items-center gap-3">
@@ -279,6 +288,18 @@ export const CustomerDashboard = () => {
                 footer={
                     <>
                         <Button variant="ghost" onClick={() => setSelectedApplication(null)}>Close</Button>
+                        {selectedApplication && (
+                            <Button
+                                variant="outline"
+                                onClick={() => {
+                                    const targetId = selectedApplication.id;
+                                    setSelectedApplication(null);
+                                    navigate(`/customer/application/${targetId}/risk`);
+                                }}
+                            >
+                                View Risk Analysis
+                            </Button>
+                        )}
                         <Link to="/customer/loans">
                             <Button>View My Applications</Button>
                         </Link>

@@ -202,7 +202,7 @@ export const EMICalculator = () => {
                 </Card>
 
                 {/* Right Column: Chart & Results */}
-                <Card className="p-6 flex flex-col justify-center items-center relative min-h-[400px]">
+                <Card className="p-6 flex flex-col justify-center items-center relative min-h-100">
                     {!isCalculated && (
                         <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm z-10 rounded-lg">
                             <p className="text-lg font-medium text-slate-500 dark:text-slate-400">
