@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useGoogleLogin } from '@react-oauth/google';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
@@ -11,14 +12,28 @@ type Role = 'customer' | 'officer' | 'admin' | 'manager';
 export const Login = () => {
     // const navigate = useNavigate(); // Removed as we use login from context which handles navigation but actually context handles it. 
     // Wait, context handles navigation.
-    const { login, isLoading } = useAuth();
+    const { login, loginWithGoogle, isLoading } = useAuth();
     const [selectedRole, setSelectedRole] = useState<Role>('customer');
     const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+
+    const googleLogin = useGoogleLogin({
+        onSuccess: async (tokenResponse) => {
+            try {
+                setError('');
+                await loginWithGoogle(tokenResponse.access_token, selectedRole);
+            } catch (err: any) {
+                setError(err.message || 'Google sign-in failed');
+            }
+        },
+        onError: () => setError('Google sign-in failed'),
+    });
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            await login(selectedRole, email);
+            await login(selectedRole, email, password);
         } catch (error) {
             console.error('Login failed:', error);
         }
@@ -66,6 +81,11 @@ export const Login = () => {
 
             <Card className="border-none shadow-none bg-transparent p-0">
                 <form onSubmit={handleSubmit} className="space-y-4">
+                    {error && (
+                        <div className="p-3 text-sm text-red-500 bg-red-50 dark:bg-red-900/20 rounded-md">
+                            {error}
+                        </div>
+                    )}
                     <Input
                         label="Email Address"
                         type="email"
@@ -87,6 +107,8 @@ export const Login = () => {
                                 required
                                 autoComplete="current-password"
                                 containerClassName="w-full"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
                             />
                         </div>
                     </div>
@@ -108,7 +130,7 @@ export const Login = () => {
                         Sign In as {roles.find(r => r.id === selectedRole)?.label}
                     </Button>
 
-                    <Button type="button" variant="outline" className="w-full" leftIcon={
+                    <Button type="button" variant="outline" className="w-full" onClick={() => googleLogin()} leftIcon={
                         <svg className="w-5 h-5" viewBox="0 0 24 24">
                             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
                             <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />

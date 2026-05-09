@@ -1,5 +1,6 @@
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Landing from '@/pages/Landing';
 import { AuthLayout } from '@/features/auth/components/AuthLayout';
@@ -27,6 +28,7 @@ import { ManagerApplicationVerification } from '@/features/officer/pages/Manager
 import { AdminDashboard } from '@/features/admin/pages/AdminDashboard';
 import { UserManagement } from '@/features/admin/pages/UserManagement';
 import { SystemSettings } from '@/features/admin/pages/SystemSettings';
+import { AdminAnalytics } from '@/features/admin/pages/AdminAnalytics';
 import { AboutPage, FeaturesPage, PricingPage, ContactPage, PrivacyPage, TermsPage, CookiesPage } from '@/pages/StaticPages';
 
 function App() {
@@ -82,6 +84,7 @@ function App() {
               <Route path="/admin" element={<DashboardLayout role="admin" />}>
                 <Route index element={<AdminDashboard />} />
                 <Route path="users" element={<UserManagement />} />
+                <Route path="analytics" element={<AdminAnalytics />} />
                 <Route path="settings" element={<SystemSettings />} />
               </Route>
             </Routes>
@@ -92,4 +95,10 @@ function App() {
   );
 }
 
-export default App;
+export default function AppWrapper() {
+  return (
+    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || 'placeholder-client-id.apps.googleusercontent.com'}>
+      <App />
+    </GoogleOAuthProvider>
+  );
+}

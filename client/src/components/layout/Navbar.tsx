@@ -3,7 +3,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { Moon, Sun, Bell, Menu, User, CheckCircle, Info, AlertTriangle, XCircle } from 'lucide-react';
+import { Moon, Sun, Bell, Menu, User, CheckCircle, Info, AlertTriangle, XCircle, Settings, LogOut, ChevronDown } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 function formatRelativeTime(value: string | Date) {
@@ -22,11 +22,13 @@ interface NavbarProps {
 
 export const Navbar = ({ toggleSidebar, showSidebarToggle = false }: NavbarProps) => {
     const { theme, toggleTheme } = useTheme();
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
     
     const [notifications, setNotifications] = useState<any[]>([]);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const profileRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const fetchNotifications = async () => {
@@ -48,6 +50,9 @@ export const Navbar = ({ toggleSidebar, showSidebarToggle = false }: NavbarProps
         const handleClickOutside = (event: MouseEvent) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
                 setIsDropdownOpen(false);
+            }
+            if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+                setIsProfileOpen(false);
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
@@ -143,19 +148,70 @@ export const Navbar = ({ toggleSidebar, showSidebarToggle = false }: NavbarProps
 
                 <div className="h-8 w-[1px] bg-slate-200 dark:bg-slate-700 mx-1"></div>
 
-                <button className="flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-800 p-1.5 rounded-lg transition-colors">
-                    <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center overflow-hidden">
-                        <User className="w-5 h-5 text-slate-500 dark:text-slate-400" />
-                    </div>
-                    <div className="hidden md:block text-left">
-                        <p className="text-sm font-medium text-light-text-primary dark:text-dark-text-primary leading-none">
-                            {user?.name || 'User'}
-                        </p>
-                        <p className="text-xs text-light-text-muted dark:text-dark-text-muted mt-0.5 capitalize">
-                            {user?.role || 'Guest'}
-                        </p>
-                    </div>
-                </button>
+                <div className="relative" ref={profileRef}>
+                    <button 
+                        onClick={() => setIsProfileOpen(!isProfileOpen)}
+                        className="flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-800 p-1.5 pr-2 rounded-xl transition-colors outline-none focus:ring-2 focus:ring-primary/20"
+                    >
+                        <div className="w-9 h-9 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center overflow-hidden border border-blue-100 dark:border-blue-800">
+                            {user?.avatar ? (
+                                <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                            ) : (
+                                <User className="w-5 h-5 text-primary" />
+                            )}
+                        </div>
+                        <div className="hidden md:flex flex-col items-start text-left">
+                            <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 leading-none">
+                                {user?.name || 'User'}
+                            </p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 capitalize font-medium">
+                                {user?.role || 'Guest'}
+                            </p>
+                        </div>
+                        <ChevronDown className={`w-4 h-4 text-slate-400 ml-1 transition-transform duration-200 hidden md:block ${isProfileOpen ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {isProfileOpen && (
+                        <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg z-50 overflow-hidden transform origin-top-right transition-all animate-in fade-in slide-in-from-top-2">
+                            <div className="p-4 border-b border-slate-100 dark:border-slate-800/50 bg-slate-50/50 dark:bg-slate-800/20">
+                                <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{user?.name}</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">{user?.email}</p>
+                            </div>
+                            
+                            <div className="p-2">
+                                <Link 
+                                    to={`/${user?.role === 'admin' ? 'admin' : user?.role === 'officer' || user?.role === 'manager' ? 'officer' : 'customer'}/settings`}
+                                    onClick={() => setIsProfileOpen(false)}
+                                    className="flex items-center gap-3 px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-lg transition-colors"
+                                >
+                                    <User className="w-4 h-4" />
+                                    My Profile
+                                </Link>
+                                <Link 
+                                    to={`/${user?.role === 'admin' ? 'admin' : user?.role === 'officer' || user?.role === 'manager' ? 'officer' : 'customer'}/settings`}
+                                    onClick={() => setIsProfileOpen(false)}
+                                    className="flex items-center gap-3 px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-lg transition-colors"
+                                >
+                                    <Settings className="w-4 h-4" />
+                                    Account Settings
+                                </Link>
+                            </div>
+                            
+                            <div className="p-2 border-t border-slate-100 dark:border-slate-800/50">
+                                <button 
+                                    onClick={() => {
+                                        setIsProfileOpen(false);
+                                        logout();
+                                    }}
+                                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
+                                >
+                                    <LogOut className="w-4 h-4" />
+                                    Sign Out
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
         </nav>
     );

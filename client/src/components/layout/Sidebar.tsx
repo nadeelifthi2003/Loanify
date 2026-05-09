@@ -42,6 +42,7 @@ export const Sidebar = ({ isOpen, onClose, role = 'customer' }: SidebarProps) =>
 
     const adminLinks = [
         { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
+        { icon: PieChart, label: 'Analytics & Reports', path: '/admin/analytics' },
         { icon: Users, label: 'User Management', path: '/admin/users' },
         { icon: Settings, label: 'System Settings', path: '/admin/settings' },
     ];

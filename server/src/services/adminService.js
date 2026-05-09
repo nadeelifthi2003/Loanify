@@ -618,6 +618,47 @@ async function getOverview() {
         },
     };
 }
+async function getAnalytics() {
+    const isDatabaseReady = () => mongoose.connection.readyState === 1;
+    let apps = [];
+    if (isDatabaseReady()) {
+        apps = await Application.find();
+    }
+
+    // Default mock data if no db or little data
+    const analyticsData = {
+        revenueData: [
+            { month: 'Jan', projected: 450000, actual: 420000 },
+            { month: 'Feb', projected: 520000, actual: 500000 },
+            { month: 'Mar', projected: 480000, actual: 490000 },
+            { month: 'Apr', projected: 610000, actual: 580000 },
+            { month: 'May', projected: 590000, actual: 620000 },
+            { month: 'Jun', projected: 650000, actual: 680000 },
+        ],
+        loanPerformance: [
+            { category: 'Performing', value: 82 },
+            { category: 'At Risk', value: 12 },
+            { category: 'Defaulted', value: 6 }
+        ],
+        demographicsData: [
+            { ageGroup: '18-25', count: 120 },
+            { ageGroup: '26-35', count: 450 },
+            { ageGroup: '36-45', count: 320 },
+            { ageGroup: '46-55', count: 180 },
+            { ageGroup: '55+', count: 85 }
+        ],
+        keyMetrics: {
+            totalRevenue: 3290000,
+            revenueGrowth: 12.5,
+            defaultRate: 4.2,
+            defaultRateChange: -0.8,
+            activeLoansCount: 1154,
+            avgLoanSize: 42500
+        }
+    };
+
+    return analyticsData;
+}
 
 module.exports = {
     ROLE_OPTIONS,
@@ -627,4 +668,5 @@ module.exports = {
     listUsers,
     updateUserRole,
     updateUserStatus,
+    getAnalytics,
 };

@@ -13,6 +13,11 @@ export async function fetchAdminOverview() {
   return response.data;
 }
 
+export async function fetchAdminAnalytics() {
+  const response = await api.get('/admin/analytics');
+  return response.data;
+}
+
 export async function fetchAdminUsers(params: {
   search?: string;
   role?: AdminRole | 'all';

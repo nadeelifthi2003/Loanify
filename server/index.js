@@ -4,6 +4,12 @@ const mongoose = require('mongoose');
 require('dotenv').config();
 
 const Application = require('./models/Application');
+const User = require('./models/User');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const { OAuth2Client } = require('google-auth-library');
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || 'placeholder');
 const {
     ROLE_OPTIONS,
     STATUS_OPTIONS,
@@ -12,6 +18,7 @@ const {
     listUsers,
     updateUserRole,
     updateUserStatus,
+    getAnalytics,
 } = require('./src/services/adminService');
 
 const app = express();
@@ -626,6 +633,218 @@ const ensureApplicationDocumentStatuses = async (application) => {
     return application;
 };
 
+// Loanify Loan Rates Route
+app.get('/api/rates/loanify', (req, res) => {
+    // Base rates defined by Loanify - fluctuate slightly to show live feed
+    const fluctuate = (base) => (base + parseFloat((Math.random() * 0.2 - 0.1).toFixed(2))).toFixed(2);
+    const trend = () => Math.random() > 0.5 ? 'up' : 'down';
+
+    const products = [
+        {
+            id: 1,
+            product: 'Personal Loan',
+            icon: 'user',
+            rate: fluctuate(13.5),
+            minTenure: 12,
+            maxTenure: 60,
+            maxAmount: 2000000,
+            description: 'Fast approval, no collateral required',
+            trend: trend(),
+        },
+        {
+            id: 2,
+            product: 'Home Loan',
+            icon: 'home',
+            rate: fluctuate(11.0),
+            minTenure: 60,
+            maxTenure: 240,
+            maxAmount: 25000000,
+            description: 'Build your dream home at low rates',
+            trend: trend(),
+        },
+        {
+            id: 3,
+            product: 'Vehicle Loan',
+            icon: 'car',
+            rate: fluctuate(12.5),
+            minTenure: 12,
+            maxTenure: 84,
+            maxAmount: 8000000,
+            description: 'Finance your car or motorbike easily',
+            trend: trend(),
+        },
+        {
+            id: 4,
+            product: 'Education Loan',
+            icon: 'book',
+            rate: fluctuate(9.5),
+            minTenure: 12,
+            maxTenure: 84,
+            maxAmount: 3000000,
+            description: 'Invest in your future with lower rates',
+            trend: trend(),
+        },
+        {
+            id: 5,
+            product: 'Business Loan',
+            icon: 'briefcase',
+            rate: fluctuate(14.0),
+            minTenure: 12,
+            maxTenure: 120,
+            maxAmount: 50000000,
+            description: 'Scale your business with flexible terms',
+            trend: trend(),
+        },
+        {
+            id: 6,
+            product: 'Agri Loan',
+            icon: 'leaf',
+            rate: fluctuate(8.5),
+            minTenure: 6,
+            maxTenure: 60,
+            maxAmount: 5000000,
+            description: 'Subsidized loans for the farming sector',
+            trend: trend(),
+        },
+    ];
+
+    res.json({
+        status: 'success',
+        provider: 'Loanify',
+        lastUpdated: new Date().toISOString(),
+        products,
+    });
+});
+
+// Auth Routes
+
+app.post('/api/auth/register', async (req, res) => {
+    try {
+        const { name, email, password } = req.body;
+        if (!name || !email || !password) {
+            return res.status(400).json({ status: 'error', message: 'Name, email, and password are required' });
+        }
+
+        const existingUser = await User.findOne({ email: email.toLowerCase() });
+        if (existingUser) {
+            return res.status(400).json({ status: 'error', message: 'Email already in use' });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const newUser = new User({
+            name,
+            email: email.toLowerCase(),
+            password: hashedPassword,
+            role: 'customer'
+        });
+
+        await newUser.save();
+
+        const token = jwt.sign(
+            { id: newUser._id, role: newUser.role, email: newUser.email },
+            process.env.JWT_SECRET || 'fallback_secret',
+            { expiresIn: '1d' }
+        );
+
+        res.status(201).json({
+            status: 'success',
+            user: { id: newUser._id, name: newUser.name, email: newUser.email, role: newUser.role },
+            token
+        });
+    } catch (error) {
+        console.error('Register error:', error);
+        res.status(500).json({ status: 'error', message: 'Server error during registration' });
+    }
+});
+
+app.post('/api/auth/login', async (req, res) => {
+    try {
+        const { email, password, role } = req.body;
+        if (!email || !password) {
+            return res.status(400).json({ status: 'error', message: 'Email and password are required' });
+        }
+
+        const user = await User.findOne({ email: email.toLowerCase() });
+        if (!user) {
+            return res.status(401).json({ status: 'error', message: 'Invalid credentials' });
+        }
+
+        if (role && user.role !== role) {
+            return res.status(403).json({ status: 'error', message: `Not authorized as ${role}` });
+        }
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(401).json({ status: 'error', message: 'Invalid credentials' });
+        }
+
+        const token = jwt.sign(
+            { id: user._id, role: user.role, email: user.email },
+            process.env.JWT_SECRET || 'fallback_secret',
+            { expiresIn: '1d' }
+        );
+
+        res.json({
+            status: 'success',
+            user: { id: user._id, name: user.name, email: user.email, role: user.role },
+            token
+        });
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({ status: 'error', message: 'Server error during login' });
+    }
+});
+
+app.post('/api/auth/google', async (req, res) => {
+    try {
+        const { token, role } = req.body;
+        if (!token) {
+            return res.status(400).json({ status: 'error', message: 'Token is required' });
+        }
+
+        const ticket = await googleClient.verifyIdToken({
+            idToken: token,
+            audience: process.env.GOOGLE_CLIENT_ID || 'placeholder',
+        });
+
+        const payload = ticket.getPayload();
+        if (!payload) {
+             return res.status(400).json({ status: 'error', message: 'Invalid Google token payload' });
+        }
+
+        const email = payload.email.toLowerCase();
+        let user = await User.findOne({ email });
+
+        if (!user) {
+            // Register
+            user = new User({
+                name: payload.name,
+                email: email,
+                password: await bcrypt.hash(Math.random().toString(36).slice(-10), 10), // Random password
+                role: role || 'customer',
+            });
+            await user.save();
+        } else if (role && user.role !== role) {
+            return res.status(403).json({ status: 'error', message: `Not authorized as ${role}` });
+        }
+
+        const jwtToken = jwt.sign(
+            { id: user._id, role: user.role, email: user.email },
+            process.env.JWT_SECRET || 'fallback_secret',
+            { expiresIn: '1d' }
+        );
+
+        res.json({
+            status: 'success',
+            user: { id: user._id, name: user.name, email: user.email, role: user.role },
+            token: jwtToken
+        });
+    } catch (error) {
+        console.error('Google Auth error:', error);
+        res.status(500).json({ status: 'error', message: 'Server error during Google authentication' });
+    }
+});
+
 // Health Check
 app.get('/api/health', (req, res) => {
     res.status(200).json({ status: 'ok', message: 'Server is healthy' });
@@ -638,6 +857,16 @@ app.get('/api/admin/overview', async (req, res) => {
     } catch (error) {
         console.error('Error loading admin overview:', error);
         res.status(500).json({ status: 'error', message: 'Failed to load admin overview', error: error.message });
+    }
+});
+
+app.get('/api/admin/analytics', async (req, res) => {
+    try {
+        const analytics = await getAnalytics();
+        res.json(analytics);
+    } catch (error) {
+        console.error('Error loading admin analytics:', error);
+        res.status(500).json({ status: 'error', message: 'Failed to load admin analytics', error: error.message });
     }
 });
 

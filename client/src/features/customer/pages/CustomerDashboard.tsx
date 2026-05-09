@@ -7,6 +7,37 @@ import { Link, useNavigate } from 'react-router-dom';
 import { formatNumber } from '@/utils/formatCurrency';
 
 import { useState, useEffect } from 'react';
+import { Activity, TrendingDown, User, Home, Car, BookOpen, Briefcase, Leaf } from 'lucide-react';
+
+interface LoanifyRate {
+    id: number;
+    product: string;
+    icon: string;
+    rate: string;
+    minTenure: number;
+    maxTenure: number;
+    maxAmount: number;
+    description: string;
+    trend: 'up' | 'down';
+}
+
+const PRODUCT_ICONS: Record<string, React.ReactNode> = {
+    user:      <User className="w-5 h-5" />,
+    home:      <Home className="w-5 h-5" />,
+    car:       <Car className="w-5 h-5" />,
+    book:      <BookOpen className="w-5 h-5" />,
+    briefcase: <Briefcase className="w-5 h-5" />,
+    leaf:      <Leaf className="w-5 h-5" />,
+};
+
+const PRODUCT_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+    user:      { bg: 'bg-blue-50 dark:bg-blue-900/20',   text: 'text-blue-600 dark:text-blue-400',   border: 'border-blue-200 dark:border-blue-800' },
+    home:      { bg: 'bg-green-50 dark:bg-green-900/20', text: 'text-green-600 dark:text-green-400', border: 'border-green-200 dark:border-green-800' },
+    car:       { bg: 'bg-purple-50 dark:bg-purple-900/20', text: 'text-purple-600 dark:text-purple-400', border: 'border-purple-200 dark:border-purple-800' },
+    book:      { bg: 'bg-amber-50 dark:bg-amber-900/20', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-200 dark:border-amber-800' },
+    briefcase: { bg: 'bg-indigo-50 dark:bg-indigo-900/20', text: 'text-indigo-600 dark:text-indigo-400', border: 'border-indigo-200 dark:border-indigo-800' },
+    leaf:      { bg: 'bg-teal-50 dark:bg-teal-900/20',  text: 'text-teal-600 dark:text-teal-400',  border: 'border-teal-200 dark:border-teal-800' },
+};
 
 interface RiskFactor {
     label: string;
@@ -53,6 +84,19 @@ export const CustomerDashboard = () => {
     const navigate = useNavigate();
     const [recentApplications, setRecentApplications] = useState<Application[]>([]);
     const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
+    const [bankRates, setBankRates] = useState<LoanifyRate[]>([]);
+
+    const fetchRates = async () => {
+        try {
+            const response = await fetch('http://localhost:5000/api/rates/loanify');
+            const data = await response.json();
+            if (data.status === 'success') {
+                setBankRates(data.products);
+            }
+        } catch (error) {
+            console.error('Error fetching Loanify rates:', error);
+        }
+    };
 
     const fetchApplications = async () => {
         try {
@@ -68,6 +112,14 @@ export const CustomerDashboard = () => {
 
     useEffect(() => {
         void fetchApplications();
+        void fetchRates();
+        
+        // Live update simulation every 15 seconds
+        const interval = setInterval(() => {
+            void fetchRates();
+        }, 15000);
+        
+        return () => clearInterval(interval);
     }, []);
 
     const openApplicationResult = async (applicationId: string) => {
@@ -180,6 +232,53 @@ export const CustomerDashboard = () => {
                         <Badge variant="success" size="sm" className="mt-1">Excellent</Badge>
                     </div>
                 </Card>
+            </div>
+
+            {/* Loanify Live Rates Section */}
+            <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                    <Activity className="w-5 h-5 text-primary animate-pulse" />
+                    <h2 className="text-lg font-semibold text-light-text-primary dark:text-dark-text-primary">Loanify Current Interest Rates</h2>
+                    <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">Live</span>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                    {bankRates.length > 0 ? bankRates.map((r) => {
+                        const colors = PRODUCT_COLORS[r.icon] ?? PRODUCT_COLORS['user'];
+                        return (
+                            <Card key={r.id} className={`p-4 flex flex-col gap-3 border ${colors.border} hover:shadow-md transition-shadow`}>
+                                <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${colors.bg} ${colors.text}`}>
+                                    {PRODUCT_ICONS[r.icon]}
+                                </div>
+                                <div>
+                                    <p className="text-xs font-bold text-light-text-primary dark:text-dark-text-primary">{r.product}</p>
+                                    <p className="text-[10px] text-slate-400 mt-0.5 leading-snug">{r.description}</p>
+                                </div>
+                                <div className="flex items-end justify-between">
+                                    <div>
+                                        <div className="flex items-center gap-1">
+                                            <span className={`text-xl font-extrabold ${r.trend === 'up' ? 'text-red-500' : 'text-green-500'}`}>
+                                                {r.rate}%
+                                            </span>
+                                            {r.trend === 'up'
+                                                ? <TrendingUp className="w-3.5 h-3.5 text-red-500" />
+                                                : <TrendingDown className="w-3.5 h-3.5 text-green-500" />}
+                                        </div>
+                                        <p className="text-[10px] text-slate-400">p.a. interest</p>
+                                    </div>
+                                    <p className="text-[10px] text-slate-400 text-right">
+                                        Up to<br />
+                                        <span className="font-semibold text-slate-500">{r.maxTenure}m</span>
+                                    </p>
+                                </div>
+                            </Card>
+                        );
+                    }) : (
+                        <Card className="col-span-full p-5 text-center">
+                            <Activity className="w-6 h-6 mx-auto text-primary animate-pulse mb-2" />
+                            <p className="text-sm text-slate-500">Loading Loanify rates...</p>
+                        </Card>
+                    )}
+                </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
