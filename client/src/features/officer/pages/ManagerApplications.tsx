@@ -10,6 +10,7 @@ import { formatNumber } from '@/utils/formatCurrency';
 export const ManagerApplications = () => {
     const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [applications, setApplications] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -20,6 +21,7 @@ export const ManagerApplications = () => {
                 if (res.ok) {
                     const data = await res.json();
                     // Manager only sees applications pending manager review
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     setApplications(data.filter((app: any) => app.status === 'Manager Review'));
                 }
             } catch (err) {

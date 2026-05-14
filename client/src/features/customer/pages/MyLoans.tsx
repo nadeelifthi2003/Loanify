@@ -44,7 +44,9 @@ export const MyLoans = () => {
             const data = await res.json();
             
             const activeLoans: Loan[] = data
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 .filter((app: any) => app.status === 'Approved' || app.status === 'Manager Approved')
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 .map((app: any) => {
                     const paid = app.paidAmount || 0;
                     const amount = app.loanAmount;

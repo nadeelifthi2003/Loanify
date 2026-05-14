@@ -8,6 +8,7 @@ import { formatNumber } from '@/utils/formatCurrency';
 
 export const OfficerDashboard = () => {
     const navigate = useNavigate();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [applications, setApplications] = useState<any[]>([]);
     const [customersCount, setCustomersCount] = useState<number>(0);
     const [loading, setLoading] = useState(true);

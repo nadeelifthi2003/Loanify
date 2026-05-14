@@ -20,8 +20,8 @@ export const Register = () => {
             try {
                 setError('');
                 await loginWithGoogle(tokenResponse.access_token);
-            } catch (err: any) {
-                setError(err.message || 'Google sign-up failed');
+            } catch (err: unknown) {
+                setError((err as Error).message || 'Google sign-up failed');
             }
         },
         onError: () => setError('Google sign-up failed'),
@@ -40,8 +40,8 @@ export const Register = () => {
         try {
             setError('');
             await register(name, email, password);
-        } catch (err: any) {
-            setError(err.message || 'Registration failed');
+        } catch (err: unknown) {
+            setError((err as Error).message || 'Registration failed');
         }
     };
 

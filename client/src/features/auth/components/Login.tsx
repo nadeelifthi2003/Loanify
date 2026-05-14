@@ -23,8 +23,8 @@ export const Login = () => {
             try {
                 setError('');
                 await loginWithGoogle(tokenResponse.access_token, selectedRole);
-            } catch (err: any) {
-                setError(err.message || 'Google sign-in failed');
+            } catch (err: unknown) {
+                setError((err as Error).message || 'Google sign-in failed');
             }
         },
         onError: () => setError('Google sign-in failed'),

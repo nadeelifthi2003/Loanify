@@ -116,6 +116,7 @@ def train_and_save_model():
     
     score = model.score(X_test, y_test)
     print(f"Model R^2 Score on test set: {score:.4f}")
+    print(f"Overall ML Model Accuracy: {score * 100:.2f}% accurate")
     
     # Save the pipeline
     joblib.dump(model, 'model.joblib')

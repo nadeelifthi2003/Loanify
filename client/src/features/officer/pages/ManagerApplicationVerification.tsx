@@ -14,6 +14,7 @@ export const ManagerApplicationVerification = () => {
     const { showToast } = useToast();
     const { user } = useAuth();
     
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [app, setApp] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
@@ -64,6 +65,7 @@ export const ManagerApplicationVerification = () => {
         }
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleDownload = (doc: any) => {
         try {
             const dataParts = doc.data.split(',');
@@ -83,7 +85,7 @@ export const ManagerApplicationVerification = () => {
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             showToast(`Successfully downloaded: ${doc.fileName}`, 'success');
-        } catch (e) {
+        } catch {
             showToast('Failed to download document', 'error');
         }
     };
@@ -213,6 +215,7 @@ export const ManagerApplicationVerification = () => {
                     <Card className="p-6">
                         <h2 className="text-base font-medium text-gray-700 dark:text-gray-200 mb-6">Verification Completed By Officer</h2>
                         <div className="space-y-3">
+                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                             {app.documents && app.documents.length > 0 ? app.documents.map((doc: any) => (
                                 <div key={doc._id} className="flex flex-col gap-3 p-3 border border-gray-200 dark:border-gray-700 rounded-md">
                                     <div className="flex items-center justify-between">

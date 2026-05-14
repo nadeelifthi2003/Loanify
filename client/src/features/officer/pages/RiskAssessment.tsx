@@ -250,7 +250,7 @@ export const RiskAssessment = () => {
                 } else {
                     setError(data.message || 'Failed to fetch risk data');
                 }
-            } catch (err) {
+            } catch {
                 setError('Error connecting to backend API');
             } finally {
                 setLoading(false);

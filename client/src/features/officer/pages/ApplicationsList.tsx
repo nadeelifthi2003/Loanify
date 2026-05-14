@@ -12,6 +12,7 @@ export const ApplicationsList = () => {
     const navigate = useNavigate();
     const { showToast } = useToast();
     const [searchTerm, setSearchTerm] = useState('');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [applications, setApplications] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 

@@ -20,6 +20,7 @@ export const ApplicationVerification = () => {
     const { id } = useParams();
     const { showToast } = useToast();
     
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [app, setApp] = useState<any>(null);
     const [riskSummary, setRiskSummary] = useState<RiskSummary | null>(null);
     const [loading, setLoading] = useState(true);
@@ -81,6 +82,7 @@ export const ApplicationVerification = () => {
         }
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleDownload = (doc: any) => {
         try {
             const dataParts = doc.data.split(',');
@@ -100,7 +102,7 @@ export const ApplicationVerification = () => {
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             showToast(`Successfully downloaded: ${doc.fileName}`, 'success');
-        } catch (e) {
+        } catch {
             showToast('Failed to download document', 'error');
         }
     };
@@ -235,6 +237,7 @@ export const ApplicationVerification = () => {
                     <Card className="p-6">
                         <h2 className="text-base font-medium text-gray-700 dark:text-gray-200 mb-6">Uploaded Documents</h2>
                         <div className="space-y-3">
+                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                             {app.documents && app.documents.length > 0 ? app.documents.map((doc: any) => (
                                 <div key={doc._id} className="flex flex-col gap-3 p-3 border border-gray-200 dark:border-gray-700 rounded-md">
                                     <div className="flex items-center justify-between">
@@ -322,12 +325,14 @@ export const ApplicationVerification = () => {
                         )}
 
                         {/* Invalid Documents Warning Banner */}
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                         {app.documents?.some((d: any) => d.status === 'Invalid') && (
                             <div className="flex items-start gap-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-300 dark:border-orange-700 rounded-md px-3 py-2 mb-3">
                                 <span className="text-orange-500 mt-0.5">⚠️</span>
                                 <div>
                                     <p className="text-xs font-semibold text-orange-700 dark:text-orange-400">Invalid Documents Detected</p>
                                     <p className="text-xs text-orange-600 dark:text-orange-400 mt-0.5">
+                                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                         Invalid: <strong>{app.documents.filter((d: any) => d.status === 'Invalid').map((d: any) => d.fileName).join(', ')}</strong>. Approval and escalation are blocked. Request more info or reject.
                                     </p>
                                 </div>
@@ -344,6 +349,7 @@ export const ApplicationVerification = () => {
                             {(() => {
                                 const requiresEscalation = app.loanAmount >= 1000000;
                                 const isNotEligible = app.eligibilityResult?.verdict === 'Not Eligible';
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                 const hasInvalidDocs = app.documents?.some((d: any) => d.status === 'Invalid');
                                 const isBlocked = isNotEligible || hasInvalidDocs;
                                 const isActive = app.status === 'Approved' || app.status === 'Manager Review';

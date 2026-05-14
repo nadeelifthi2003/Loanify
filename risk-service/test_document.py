@@ -96,7 +96,7 @@ def test_valid_pdf_bank_statement():
         "data": pdf_b64
     })
     assert response.status_code == 200
-    return print_result("Valid PDF — Bank Statement", response, "Valid")
+    print_result("Valid PDF — Bank Statement", response, "Valid")
 
 
 # ── TEST 2: Invalid PDF — no financial keywords ──────────────────────────────
@@ -108,7 +108,7 @@ def test_invalid_pdf_no_keywords():
         "data": pdf_b64
     })
     assert response.status_code == 200
-    return print_result("Invalid PDF — No Keywords", response, "Invalid")
+    print_result("Invalid PDF — No Keywords", response, "Invalid")
 
 
 # ── TEST 3: Valid Image — large enough, clean filename ───────────────────────
@@ -120,7 +120,7 @@ def test_valid_image_large():
         "data": img_b64
     })
     assert response.status_code == 200
-    return print_result("Valid Image — Large Payslip Scan", response, "Valid")
+    print_result("Valid Image — Large Payslip Scan", response, "Valid")
 
 
 # ── TEST 4: Invalid Image — file too small ───────────────────────────────────
@@ -132,7 +132,7 @@ def test_invalid_image_too_small():
         "data": img_b64
     })
     assert response.status_code == 200
-    return print_result("Invalid Image — Too Small (<15KB)", response, "Invalid")
+    print_result("Invalid Image — Too Small (<15KB)", response, "Invalid")
 
 
 # ── TEST 5: Invalid Image — suspicious filename ──────────────────────────────
@@ -144,7 +144,7 @@ def test_invalid_image_fake_name():
         "data": img_b64
     })
     assert response.status_code == 200
-    return print_result("Invalid Image — Suspicious Filename (fake_*)", response, "Invalid")
+    print_result("Invalid Image — Suspicious Filename (fake_*)", response, "Invalid")
 
 
 # ── MAIN RUNNER ──────────────────────────────────────────────────────────────

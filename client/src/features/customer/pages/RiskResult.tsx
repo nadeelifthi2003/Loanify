@@ -107,7 +107,7 @@ export const RiskResult = () => {
                     const currentApplication = applications.find((entry: ApplicationRecord) => entry.id === id);
                     setApplication(currentApplication || null);
                 }
-            } catch (err) {
+            } catch {
                 setError('Error connecting to Risk Engine');
             } finally {
                 setLoading(false);

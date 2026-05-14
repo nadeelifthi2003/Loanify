@@ -24,7 +24,7 @@ export const Navbar = ({ toggleSidebar, showSidebarToggle = false }: NavbarProps
     const { theme, toggleTheme } = useTheme();
     const { user, logout } = useAuth();
     
-    const [notifications, setNotifications] = useState<any[]>([]);
+    const [notifications, setNotifications] = useState<{id: string, type: string, title: string, description: string, time: string}[]>([]);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);

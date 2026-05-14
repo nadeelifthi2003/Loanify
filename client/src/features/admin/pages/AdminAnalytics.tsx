@@ -9,9 +9,21 @@ import { formatNumber } from '@/utils/formatCurrency';
 
 const COLORS = ['#0D9488', '#2563EB', '#DC2626', '#F59E0B', '#8B5CF6'];
 
+interface AnalyticsData {
+    keyMetrics: {
+        totalRevenue: number;
+        revenueGrowth: number;
+        defaultRate: number;
+        activeLoansCount: number;
+    };
+    revenueData: Array<{ month: string; projected: number; actual: number }>;
+    loanPerformance: Array<{ category: string; value: number }>;
+    demographicsData: Array<{ ageGroup: string; count: number }>;
+}
+
 export const AdminAnalytics = () => {
     const { showToast } = useToast();
-    const [analytics, setAnalytics] = useState<any>(null);
+    const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
@@ -32,7 +44,7 @@ export const AdminAnalytics = () => {
 
     useEffect(() => {
         void loadAnalytics();
-    }, []);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     if (loading && !analytics) {
         return <div className="text-sm text-light-text-secondary dark:text-dark-text-secondary">Loading analytics...</div>;
@@ -126,7 +138,7 @@ export const AdminAnalytics = () => {
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.2} />
                                 <XAxis dataKey="month" axisLine={false} tickLine={false} />
                                 <YAxis axisLine={false} tickLine={false} tickFormatter={(value) => `LKR ${value/1000}k`} />
-                                <Tooltip formatter={(value: any) => [`LKR ${formatNumber(value)}`, '']} />
+                                <Tooltip formatter={(value: number | string | undefined) => [`LKR ${formatNumber(Number(value || 0))}`, '']} />
                                 <Legend />
                                 <Area type="monotone" dataKey="projected" name="Projected" stroke="#2563EB" fillOpacity={1} fill="url(#colorProjected)" />
                                 <Area type="monotone" dataKey="actual" name="Actual" stroke="#0D9488" fillOpacity={1} fill="url(#colorActual)" />
@@ -142,7 +154,7 @@ export const AdminAnalytics = () => {
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
                                 <Pie data={analytics.loanPerformance} dataKey="value" nameKey="category" cx="50%" cy="50%" innerRadius={60} outerRadius={100} label>
-                                    {analytics.loanPerformance.map((_: any, index: number) => (
+                                    {analytics.loanPerformance.map((_: unknown, index: number) => (
                                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                     ))}
                                 </Pie>
@@ -164,7 +176,7 @@ export const AdminAnalytics = () => {
                                 <YAxis axisLine={false} tickLine={false} />
                                 <Tooltip />
                                 <Bar dataKey="count" name="Number of Customers" fill="#8B5CF6" radius={[4, 4, 0, 0]}>
-                                    {analytics.demographicsData.map((_: any, index: number) => (
+                                    {analytics.demographicsData.map((_: unknown, index: number) => (
                                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                     ))}
                                 </Bar>
