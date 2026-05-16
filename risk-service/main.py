@@ -105,9 +105,9 @@ def calculate_emi(principal: float, annual_rate: float, months: int) -> float:
 
 
 def classify_dti(dti_pct: float):
-    if dti_pct < 30:
+    if dti_pct < 40:
         return "Low"
-    elif dti_pct < 45:
+    elif dti_pct < 60:
         return "Moderate"
     return "High"
 
@@ -135,15 +135,15 @@ def calculate_rule_based_risk(dti_pct: float, lti: float, employment_type: str, 
     risk_score = 10
     normalized_emp = normalize_employment_status(employment_type).lower()
 
-    if dti_pct >= 60:
-        risk_score += 55
+    if dti_pct >= 70:
+        risk_score += 50
+    elif dti_pct >= 60:
+        risk_score += 35
     elif dti_pct >= 50:
-        risk_score += 40
+        risk_score += 20
     elif dti_pct >= 40:
-        risk_score += 25
-    elif dti_pct >= 30:
-        risk_score += 15
-    elif dti_pct < 15:
+        risk_score += 10
+    elif dti_pct < 25:
         risk_score -= 5
 
     if lti >= 5:
@@ -197,8 +197,8 @@ def predict_eligibility(data: EligibilityInput):
     eligibility decision with score breakdown, EMI estimate, and actionable tips.
 
     Key financial criteria used:
-      - DTI  (Debt-to-Income Ratio)   → must stay below 50 % to be eligible
-      - LTI  (Loan-to-Income Ratio)   → loan should be ≤ 5× annual income
+      - DTI  (Debt-to-Income Ratio)   → must stay below 65 % to be eligible
+      - LTI  (Loan-to-Income Ratio)   → loan should be ≤ 6× annual income
       - Employment stability          → permanent > contract > self-employed / business
       - Income verification bonus     → +10 eligibility points when proof-of-income doc uploaded
     """
@@ -216,8 +216,8 @@ def predict_eligibility(data: EligibilityInput):
 
         lti = data.loanAmount / data.annualIncome if data.annualIncome > 0 else float("inf")
 
-        # Maximum recommended loan = 3× annual income, capped at what DTI permits
-        max_affordable_monthly = gross_monthly * 0.40 - data.existingLoanCommitments
+        # Maximum recommended loan = 4.5× annual income, capped at what DTI permits
+        max_affordable_monthly = gross_monthly * 0.55 - data.existingLoanCommitments
         if max_affordable_monthly > 0:
             # Reverse EMI formula to find max principal
             mr = estimated_annual_rate / 12
@@ -225,7 +225,7 @@ def predict_eligibility(data: EligibilityInput):
             max_loan = max_affordable_monthly * (math.pow(1 + mr, n) - 1) / (mr * math.pow(1 + mr, n))
         else:
             max_loan = 0
-        max_recommended_loan = int(min(max_loan, data.annualIncome * 3))
+        max_recommended_loan = int(min(max_loan, data.annualIncome * 4.5))
         normalized_emp = normalize_employment_status(data.employmentStatus)
         emp = normalized_emp.lower()
         applicant_age = calculate_age_from_dob(data.dob)
@@ -254,25 +254,25 @@ def predict_eligibility(data: EligibilityInput):
             score = 60  # base score – applicant starts with a fair standing
 
             # A. DTI contribution (±30 points)
-            if dti < 25:
+            if dti < 35:
                 score += 30
-            elif dti < 35:
-                score += 20
             elif dti < 45:
-                score += 10
+                score += 20
             elif dti < 55:
+                score += 10
+            elif dti < 65:
                 score -= 10
             else:
-                score -= 30   # hard penalise > 55 %
+                score -= 30   # hard penalise > 65 %
 
             # B. LTI contribution (±15 points)
-            if lti < 1:
+            if lti < 2:
                 score += 15
-            elif lti < 2:
+            elif lti < 3:
                 score += 10
-            elif lti < 3.5:
+            elif lti < 4.5:
                 score += 5
-            elif lti < 5:
+            elif lti < 6:
                 score -= 5
             else:
                 score -= 15
@@ -295,7 +295,7 @@ def predict_eligibility(data: EligibilityInput):
         score = max(0, min(score, 100))
 
         # ── 3. Verdict ────────────────────────────────────────────────────
-        hard_rejection = dti >= 60 or lti > 6
+        hard_rejection = dti >= 70 or lti > 7
 
         if hard_rejection or score < 35:
             eligible = False
@@ -320,14 +320,14 @@ def predict_eligibility(data: EligibilityInput):
         improvements: List[RiskFactor] = []
 
         # DTI
-        if dti < 35:
+        if dti < 45:
             strengths.append(RiskFactor(
                 label="Debt-to-Income Ratio",
                 score="Excellent",
                 color="text-green-600",
                 desc=f"Your total debt burden is only {dti}% of income — well within safe limits."
             ))
-        elif dti < 50:
+        elif dti < 60:
             improvements.append(RiskFactor(
                 label="Debt-to-Income Ratio",
                 score="Moderate",
@@ -339,18 +339,18 @@ def predict_eligibility(data: EligibilityInput):
                 label="Debt-to-Income Ratio",
                 score="High Risk",
                 color="text-red-600",
-                desc=f"Your DTI is {dti}% — exceeding the recommended 50% cap. Consider a smaller loan or clearing existing debts."
+                desc=f"Your DTI is {dti}% — exceeding the recommended 60% cap. Consider a smaller loan or clearing existing debts."
             ))
 
         # LTI
-        if lti < 2:
+        if lti < 3:
             strengths.append(RiskFactor(
                 label="Loan-to-Annual Income",
                 score="Good",
                 color="text-blue-600",
                 desc=f"The loan amount ({lti:.1f}× your annual income) is conservative and manageable."
             ))
-        elif lti < 4:
+        elif lti < 5:
             improvements.append(RiskFactor(
                 label="Loan-to-Annual Income",
                 score="Moderate",
@@ -417,10 +417,10 @@ def predict_eligibility(data: EligibilityInput):
             insights.append("Income document uploaded — Our system has factored document verification into your score.")
 
         alerts: List[Dict[str, str]] = []
-        if dti >= 60:
-            alerts.append({"title": "DTI Too High", "desc": "Total debt obligations exceed 60% of gross income. Loan cannot be approved at this level."})
-        if lti > 6:
-            alerts.append({"title": "Loan Amount Exceeds 6× Income", "desc": f"Requested amount is very high relative to annual income. Maximum advisable: {max_recommended_loan:,}."})
+        if dti >= 70:
+            alerts.append({"title": "DTI Too High", "desc": "Total debt obligations exceed 70% of gross income. Loan cannot be approved at this level."})
+        if lti > 7:
+            alerts.append({"title": "Loan Amount Exceeds 7× Income", "desc": f"Requested amount is very high relative to annual income. Maximum advisable: {max_recommended_loan:,}."})
         if not data.incomeVerified:
             alerts.append({"title": "No Income Document Uploaded", "desc": "Uploading proof of income is mandatory and strengthens your application significantly."})
 
@@ -482,9 +482,9 @@ def predict_risk(data: ApplicationData):
             # applications are not overstated and clearly risky ones stay elevated.
             risk_score = int(round((ml_risk_score * 0.45) + (rule_risk_score * 0.55)))
 
-            if dti >= 60 or lti > 5.5:
+            if dti >= 70 or lti > 6.5:
                 risk_score = max(risk_score, 75)
-            elif dti < 15 and lti < 0.5 and "permanent" in emp_type:
+            elif dti < 25 and lti < 1.0 and "permanent" in emp_type:
                 risk_score = min(risk_score, 29)
         else:
             risk_score = rule_risk_score
@@ -506,14 +506,14 @@ def predict_risk(data: ApplicationData):
         else:
             factors.append(RiskFactor(label="Employment Stability", score="Fair", color="text-yellow-600", desc=f"{normalized_emp} may have income variance"))
 
-        if dti < 30:
+        if dti < 40:
             factors.append(RiskFactor(label="Debt-to-Income", score="Excellent", color="text-green-600", desc=f"Healthy ratio at {dti}%"))
-        elif dti < 45:
+        elif dti < 60:
             factors.append(RiskFactor(label="Debt-to-Income", score="Good", color="text-blue-600", desc=f"Moderate ratio at {dti}%"))
         else:
             factors.append(RiskFactor(label="Debt-to-Income", score="Poor", color="text-red-600", desc=f"High ratio at {dti}%"))
 
-        if lti < 2:
+        if lti < 3:
             factors.append(RiskFactor(label="Loan-to-Income", score="Good", color="text-blue-600", desc="Loan amount is reasonable vs income"))
         else:
             factors.append(RiskFactor(label="Loan-to-Income", score="Fair", color="text-yellow-600", desc="Loan amount is high compared to annual income"))
@@ -526,10 +526,10 @@ def predict_risk(data: ApplicationData):
             insights.append("Higher number of dependents may impact disposable income.")
 
         alerts = []
-        if dti > 50:
-            alerts.append({"title": "High Debt Burden", "desc": "Total obligations exceed 50% of gross income."})
-        if lti > 5:
-            alerts.append({"title": "Excessive Loan Amount", "desc": "Loan is more than 5× annual gross income."})
+        if dti > 60:
+            alerts.append({"title": "High Debt Burden", "desc": "Total obligations exceed 60% of gross income."})
+        if lti > 6:
+            alerts.append({"title": "Excessive Loan Amount", "desc": "Loan is more than 6× annual gross income."})
 
         return RiskAssessmentResponse(
             overallRiskScore=risk_score,
@@ -584,36 +584,40 @@ def validate_document(doc: DocumentData):
         extracted_text = ""
         is_pdf = doc.fileType == "application/pdf" or name_lower.endswith(".pdf")
         
+        if "fake" in name_lower or "fraud" in name_lower or "untitled" in name_lower:
+            return DocumentValidationResponse(status="Invalid", confidence=0.99, reason="Document metadata indicates an invalid file or dummy upload.")
+        
         if is_pdf:
             try:
                 reader = PdfReader(io.BytesIO(file_bytes))
-                # Read up to 3 pages
                 for i in range(min(3, len(reader.pages))):
                     page = reader.pages[i]
                     text = page.extract_text()
                     if text:
                         extracted_text += text + " "
+                
+                # FALLBACK: If PDF has NO selectable text (it's likely a scan/image-only PDF)
+                # we treat it like an image and use heuristic checks.
+                if not extracted_text.strip():
+                    if len(file_bytes) < 15000:
+                        return DocumentValidationResponse(status="Invalid", confidence=0.85, reason="PDF scan density is too low to be a valid document.")
+                    return DocumentValidationResponse(status="Valid", confidence=0.70, reason="PDF contains scanned image data (OCR simulated).")
+                    
             except Exception as e:
                 return DocumentValidationResponse(status="Invalid", confidence=0.95, reason=f"Failed to read PDF structure: {str(e)}")
         else:
             # For non-PDFs (like png/jpg) we fall back to robust heuristic checking 
-            # since heavy Tesseract/Vision OCR isn't active on local env.
-            # We check if the image has a reasonable payload size for a scanned doc
-            if len(file_bytes) < 15000:  # Less than 15kb is highly likely a sketch or fake icon
+            if len(file_bytes) < 15000:
                 return DocumentValidationResponse(status="Invalid", confidence=0.85, reason="Image file density is too low to be a valid scanned bank/identity document.")
-            
-            # If the user explicitly named it "Untitled Diagram" or similar mock names
-            if "fake" in name_lower or "fraud" in name_lower or "untitled" in name_lower:
-                return DocumentValidationResponse(status="Invalid", confidence=0.99, reason="Document metadata indicates an invalid file or dummy upload.")
                 
             return DocumentValidationResponse(status="Valid", confidence=0.75, reason="Image met heuristic integrity checks (OCR simulated).")
 
         # 3. Semantic Keyword Validation for text-rendered PDFs
         extracted_text_lower = extracted_text.lower()
         
-        bank_keywords = ["bank", "statement", "account", "balance", "branch", "transaction", "credit", "debit", "withdrawal"]
-        salary_keywords = ["payslip", "salary", "earnings", "deductions", "net pay", "gross", "employee", "employer", "tax"]
-        identity_keywords = ["national identity", "passport", "signature", "date of birth", "nic", "citizen"]
+        bank_keywords = ["bank", "statement", "account", "balance", "branch", "transaction", "credit", "debit", "withdrawal", "savings"]
+        salary_keywords = ["payslip", "salary", "earnings", "deductions", "net pay", "gross", "employee", "employer", "tax", "income"]
+        identity_keywords = ["national identity", "passport", "signature", "date of birth", "nic", "citizen", "identity", "card", "sri lanka", "birth"]
         
         # Count keyword occurrences
         bank_hits = sum(1 for k in bank_keywords if k in extracted_text_lower)
@@ -622,8 +626,8 @@ def validate_document(doc: DocumentData):
         
         total_hits = bank_hits + salary_hits + identity_hits
         
-        # If the PDF contains at least 3 relevant banking/salary/identity terms, it's highly likely a valid document.
-        if total_hits >= 2:
+        # If the PDF contains at least 1 relevant banking/salary/identity term, it's highly likely a valid document.
+        if total_hits >= 1:
             return DocumentValidationResponse(
                 status="Valid",
                 confidence=min(0.99, 0.70 + (total_hits * 0.05)),

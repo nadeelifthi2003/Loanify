@@ -47,7 +47,7 @@ def generate_synthetic_data(num_samples=5000):
     # We will compute a risk_score (0-100)
     # Higher risk_score = High Risk. Lower = Safe
     # We add some realistic non-linearities and noise
-    risk_score = 10 + (dti * 0.8) + (lti * 5) + (dependents * 2) - (age * 0.1)
+    risk_score = 10 + (dti * 0.5) + (lti * 3) + (dependents * 2) - (age * 0.1)
     
     # Penalty for bad credit utilization and too many credit cards 
     risk_score += (credit_utilization * 0.2) + (num_credit_cards * 1.5)

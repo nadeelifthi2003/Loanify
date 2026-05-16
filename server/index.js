@@ -525,7 +525,7 @@ const buildFallbackDocumentValidation = (doc = {}) => {
     const isPdf = fileType === 'application/pdf' || nameLower.endsWith('.pdf');
 
     if (!isPdf) {
-        if (fileBytes.length < 15000) {
+        if (fileBytes.length < 1000) {
             return {
                 status: 'Invalid',
                 confidence: 0.85,
@@ -548,7 +548,7 @@ const buildFallbackDocumentValidation = (doc = {}) => {
         };
     }
 
-    if (fileBytes.length < 1200) {
+    if (fileBytes.length < 100) {
         return {
             status: 'Invalid',
             confidence: 0.95,
@@ -557,10 +557,10 @@ const buildFallbackDocumentValidation = (doc = {}) => {
     }
 
     const decodedText = fileBytes.toString('utf8').toLowerCase();
-    const keywords = ['bank', 'statement', 'account', 'balance', 'salary', 'employee', 'transaction', 'credit', 'debit', 'nic', 'identity', 'payslip'];
+    const keywords = ['bank', 'statement', 'account', 'balance', 'salary', 'employee', 'transaction', 'credit', 'debit', 'nic', 'identity', 'payslip', 'card', 'sri lanka'];
     const totalHits = keywords.reduce((count, keyword) => count + (decodedText.includes(keyword) ? 1 : 0), 0);
 
-    if (totalHits >= 2) {
+    if (totalHits >= 1) {
         return {
             status: 'Valid',
             confidence: Math.min(0.99, 0.7 + (totalHits * 0.05)),
