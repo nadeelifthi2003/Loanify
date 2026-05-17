@@ -48,37 +48,66 @@ export const SystemSettings = () => {
 
     // ── General config ──────────────────────────────────────────────
     const [general, setGeneral] = useState(() => {
-        const saved = localStorage.getItem('admin_general');
-        return saved ? JSON.parse(saved) : {
-            platformName: 'Loanify',
-            supportEmail: 'support@loanify.com',
-            maxLoanAmount: '5000000',
-            defaultInterestRate: '13.5',
-            maxTenureMonths: '240',
-        };
+        try {
+            const saved = localStorage.getItem('admin_general');
+            return saved ? JSON.parse(saved) : {
+                platformName: 'Loanify',
+                supportEmail: 'support@loanify.com',
+                maxLoanAmount: '5000000',
+                defaultInterestRate: '13.5',
+                maxTenureMonths: '240',
+            };
+        } catch {
+            return {
+                platformName: 'Loanify',
+                supportEmail: 'support@loanify.com',
+                maxLoanAmount: '5000000',
+                defaultInterestRate: '13.5',
+                maxTenureMonths: '240',
+            };
+        }
     });
 
     // ── Security config ──────────────────────────────────────────────
     const [security, setSecurity] = useState(() => {
-        const saved = localStorage.getItem('admin_security');
-        return saved ? JSON.parse(saved) : {
-            enforce2FA: true,
-            maintenanceMode: false,
-            sessionTimeout: '30m',
-            allowGoogleLogin: true,
-            auditLog: true,
-        };
+        try {
+            const saved = localStorage.getItem('admin_security');
+            return saved ? JSON.parse(saved) : {
+                enforce2FA: true,
+                maintenanceMode: false,
+                sessionTimeout: '30m',
+                allowGoogleLogin: true,
+                auditLog: true,
+            };
+        } catch {
+            return {
+                enforce2FA: true,
+                maintenanceMode: false,
+                sessionTimeout: '30m',
+                allowGoogleLogin: true,
+                auditLog: true,
+            };
+        }
     });
 
     // ── Notifications ─────────────────────────────────────────────────
     const [notifications, setNotifications] = useState(() => {
-        const saved = localStorage.getItem('admin_notifications');
-        return saved ? JSON.parse(saved) : {
-            newUserRegistration: true,
-            highRiskApplications: true,
-            systemErrors: true,
-            dailyReports: false,
-        };
+        try {
+            const saved = localStorage.getItem('admin_notifications');
+            return saved ? JSON.parse(saved) : {
+                newUserRegistration: true,
+                highRiskApplications: true,
+                systemErrors: true,
+                dailyReports: false,
+            };
+        } catch {
+            return {
+                newUserRegistration: true,
+                highRiskApplications: true,
+                systemErrors: true,
+                dailyReports: false,
+            };
+        }
     });
 
     // ── Admin profile ─────────────────────────────────────────────────

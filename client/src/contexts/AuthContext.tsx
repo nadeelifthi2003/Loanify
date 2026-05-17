@@ -32,7 +32,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // Check for saved user in localStorage on mount
         const savedUser = localStorage.getItem('loanify_user');
         if (savedUser) {
-            setUser(JSON.parse(savedUser));
+            try {
+                setUser(JSON.parse(savedUser));
+            } catch (error) {
+                console.error('Failed to parse saved user from localStorage:', error);
+                localStorage.removeItem('loanify_user');
+                localStorage.removeItem('loanify_token');
+            }
         }
         setIsLoading(false);
     }, []);

@@ -50,18 +50,31 @@ export const OfficerSettings = () => {
     });
 
     const [notifications, setNotifications] = useState(() => {
-        const saved = localStorage.getItem('officer_notifications');
-        return saved ? JSON.parse(saved) : {
-            newApplication: true,
-            riskAlerts: true,
-            dailySummary: false,
-            emailDigests: true,
-        };
+        try {
+            const saved = localStorage.getItem('officer_notifications');
+            return saved ? JSON.parse(saved) : {
+                newApplication: true,
+                riskAlerts: true,
+                dailySummary: false,
+                emailDigests: true,
+            };
+        } catch {
+            return {
+                newApplication: true,
+                riskAlerts: true,
+                dailySummary: false,
+                emailDigests: true,
+            };
+        }
     });
 
     const [security, setSecurity] = useState(() => {
-        const saved = localStorage.getItem('officer_security');
-        return saved ? JSON.parse(saved) : { twoFactor: true, sessionTimeout: '30m' };
+        try {
+            const saved = localStorage.getItem('officer_security');
+            return saved ? JSON.parse(saved) : { twoFactor: true, sessionTimeout: '30m' };
+        } catch {
+            return { twoFactor: true, sessionTimeout: '30m' };
+        }
     });
 
     useEffect(() => {

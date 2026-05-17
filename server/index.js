@@ -1328,7 +1328,8 @@ app.get('/api/officer/applications/:id', async (req, res) => {
             
             // 1. Try to match by exact email first
             if (appObj.email) {
-                matchedUser = await User.findOne({ email: new RegExp('^' + appObj.email.trim() + '$', 'i'), role: 'customer' });
+                const cleanEmail = appObj.email.toLowerCase().replace(/\s+/g, '').trim();
+                matchedUser = await User.findOne({ email: new RegExp('^' + cleanEmail + '$', 'i'), role: 'customer' });
             }
             
             // 2. If email match fails (e.g., user made a typo like "nimal @example.com" in the application), fallback to Name
@@ -1535,22 +1536,32 @@ app.get('/api/officer/customers', async (req, res) => {
         const users = await User.find({ role: 'customer' });
         
         const userMap = new Map();
+        const userNameMap = new Map();
+        
         users.forEach(u => {
-            if (u.email) userMap.set(u.email.toLowerCase(), u);
+            if (u.email) {
+                const cleanEmail = u.email.toLowerCase().replace(/\s+/g, '').trim();
+                userMap.set(cleanEmail, u);
+            }
+            if (u.name) {
+                const cleanName = u.name.toLowerCase().replace(/\s+/g, '').trim();
+                userNameMap.set(cleanName, u);
+            }
         });
 
         const customerMap = new Map();
         
         applications.forEach(app => {
             if (!customerMap.has(app.nic)) {
-                const appEmail = (app.email || '').toLowerCase();
-                const matchedUser = userMap.get(appEmail);
+                const appEmail = (app.email || '').toLowerCase().replace(/\s+/g, '').trim();
+                const cleanName = (app.fullName || '').toLowerCase().replace(/\s+/g, '').trim();
+                const matchedUser = userMap.get(appEmail) || userNameMap.get(cleanName);
 
                 customerMap.set(app.nic, {
                     id: `C-${app.nic.slice(0, 6).toUpperCase()}`, // Generate a pseudo customer ID based on NIC
                     // Use matched User profile name/phone if available, fallback to application data
                     name: matchedUser?.name || app.fullName,
-                    email: app.email,
+                    email: matchedUser?.email || app.email,
                     phone: matchedUser?.phone || app.contactNumber,
                     joinDate: app.createdAt || app.date,
                     activeLoans: app.status === 'Approved' ? 1 : 0,

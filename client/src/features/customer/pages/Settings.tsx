@@ -51,13 +51,22 @@ export const Settings = () => {
     });
 
     const [notifications, setNotifications] = useState(() => {
-        const saved = localStorage.getItem('customer_notifications');
-        return saved ? JSON.parse(saved) : {
-            loanStatusUpdates: true,
-            paymentReminders: true,
-            promotionalOffers: false,
-            emailDigests: true,
-        };
+        try {
+            const saved = localStorage.getItem('customer_notifications');
+            return saved ? JSON.parse(saved) : {
+                loanStatusUpdates: true,
+                paymentReminders: true,
+                promotionalOffers: false,
+                emailDigests: true,
+            };
+        } catch {
+            return {
+                loanStatusUpdates: true,
+                paymentReminders: true,
+                promotionalOffers: false,
+                emailDigests: true,
+            };
+        }
     });
 
     // Load profile from server
