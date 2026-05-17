@@ -47,20 +47,34 @@ export const LoanApplication = () => {
     });
     const [errors, setErrors] = useState<Record<string, string>>({});
 
+    // Valid CRIB number format: CR- followed by exactly 7 digits (e.g., CR-1234567)
+    const CRIB_REGEX = /^CR-\d{7}$/i;
+
     const checkCribStatus = async () => {
         if (!formData.cribNumber) return;
+
+        // Client-side format validation
+        if (!CRIB_REGEX.test(formData.cribNumber.trim())) {
+            setCribStatus('error');
+            setCribMessage(
+                'Invalid format. A CRIB number must start with "CR-" followed by exactly 7 digits (e.g., CR-1234567).'
+            );
+            return;
+        }
+
         setCribLoading(true);
         try {
             const response = await fetch('http://localhost:5000/api/check-crib', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ cribNumber: formData.cribNumber })
+                body: JSON.stringify({ cribNumber: formData.cribNumber.trim() })
             });
             const data = await response.json();
-            setCribStatus(data.status);
+            setCribStatus(data.status as 'clean' | 'blacklisted' | 'error');
             setCribMessage(data.message);
         } catch (error) {
             console.error('Error checking CRIB status:', error);
+            setCribStatus('error');
             setCribMessage('Error connecting to CRIB service. Please try again.');
         } finally {
             setCribLoading(false);
@@ -382,7 +396,7 @@ export const LoanApplication = () => {
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">CRIB Report Number</label>
                                 <div className="flex gap-2">
                                     <Input
-                                        placeholder="Enter CRIB Number (e.g., CR-12345)"
+                                        placeholder="CR-1234567"
                                         containerClassName="flex-1"
                                         name="cribNumber"
                                         value={formData.cribNumber}
@@ -394,11 +408,18 @@ export const LoanApplication = () => {
                                         disabled={cribLoading || !formData.cribNumber}
                                         variant={cribStatus === 'clean' ? 'success' : (cribStatus === 'blacklisted' || cribStatus === 'error') ? 'danger' : 'primary'}
                                     >
-                                        {cribLoading ? 'Checking...' : cribStatus === 'clean' ? 'Verified' : 'Check Status'}
+                                        {cribLoading ? 'Checking...' : cribStatus === 'clean' ? 'Verified ✓' : 'Check Status'}
                                     </Button>
                                 </div>
+                                <p className="text-xs text-slate-400">
+                                    Format: <strong>CR-</strong> followed by 7 digits &nbsp;·&nbsp; e.g. <code>CR-1234567</code>
+                                </p>
                                 {cribMessage && (
-                                    <p className={`text-sm ${cribStatus === 'clean' ? 'text-green-600' : 'text-red-600'}`}>
+                                    <p className={`text-sm font-medium ${
+                                        cribStatus === 'clean'
+                                            ? 'text-green-600'
+                                            : 'text-red-600'
+                                    }`}>
                                         {cribMessage}
                                     </p>
                                 )}

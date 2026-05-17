@@ -633,6 +633,79 @@ const ensureApplicationDocumentStatuses = async (application) => {
     return application;
 };
 
+// ─────────────────────────────────────────────
+// CRIB (Credit Information Bureau) Verification
+// ─────────────────────────────────────────────
+//
+// Valid Sri Lanka CRIB report numbers follow the format: CR-XXXXXXX
+//   - Must start with the prefix "CR-" (case-insensitive)
+//   - Followed by exactly 7 numeric digits
+//   Example valid numbers: CR-1234567, CR-9876543, CR-0011223
+//
+// The regex used: /^CR-\d{7}$/i
+//
+// A curated blacklist of CRIB numbers that are flagged in the system.
+// For demo purposes the following numbers return "blacklisted":
+//   CR-0000001, CR-9999999, CR-1111111, CR-3333333, CR-7654321
+
+const CRIB_BLACKLIST = new Set([
+    'CR-0000001',
+    'CR-9999999',
+    'CR-1111111',
+    'CR-3333333',
+    'CR-7654321',
+]);
+
+const CRIB_NUMBER_REGEX = /^CR-\d{7}$/i;
+
+app.post('/api/check-crib', (req, res) => {
+    try {
+        const { cribNumber } = req.body;
+
+        if (!cribNumber || typeof cribNumber !== 'string') {
+            return res.status(400).json({
+                status: 'error',
+                message: 'CRIB number is required.',
+            });
+        }
+
+        const trimmed = cribNumber.trim();
+
+        // --- Format validation ---
+        if (!CRIB_NUMBER_REGEX.test(trimmed)) {
+            return res.status(400).json({
+                status: 'error',
+                message:
+                    'Invalid CRIB number format. A valid CRIB number must start with "CR-" followed by exactly 7 digits (e.g., CR-1234567).',
+            });
+        }
+
+        // Normalise to uppercase for consistent lookup
+        const normalised = trimmed.toUpperCase();
+
+        // --- Blacklist check ---
+        if (CRIB_BLACKLIST.has(normalised)) {
+            return res.json({
+                status: 'blacklisted',
+                message:
+                    'This CRIB number is flagged in our system. You are not eligible to apply for a loan.',
+            });
+        }
+
+        // --- All checks passed → clean record ---
+        return res.json({
+            status: 'clean',
+            message: `CRIB report ${normalised} verified successfully. No adverse credit records found.`,
+        });
+    } catch (error) {
+        console.error('CRIB check error:', error);
+        return res.status(500).json({
+            status: 'error',
+            message: 'An error occurred while verifying the CRIB number. Please try again.',
+        });
+    }
+});
+
 // Loanify Loan Rates Route
 app.get('/api/rates/loanify', (req, res) => {
     // Base rates defined by Loanify - fluctuate slightly to show live feed
@@ -1426,21 +1499,33 @@ app.put('/api/officer/applications/:id/documents/:docId/status', async (req, res
  */
 app.get('/api/officer/customers', async (req, res) => {
     try {
-        // Simple distinct customer extraction based on NIC
+        // Distinct customer extraction based on NIC, merging updated profile info if available
         const applications = await Application.find({}).sort({ date: -1 });
+        const users = await User.find({ role: 'customer' });
+        
+        const userMap = new Map();
+        users.forEach(u => {
+            if (u.email) userMap.set(u.email.toLowerCase(), u);
+        });
+
         const customerMap = new Map();
         
         applications.forEach(app => {
             if (!customerMap.has(app.nic)) {
+                const appEmail = (app.email || '').toLowerCase();
+                const matchedUser = userMap.get(appEmail);
+
                 customerMap.set(app.nic, {
                     id: `C-${app.nic.slice(0, 6).toUpperCase()}`, // Generate a pseudo customer ID based on NIC
-                    name: app.fullName,
+                    // Use matched User profile name/phone if available, fallback to application data
+                    name: matchedUser?.name || app.fullName,
                     email: app.email,
-                    phone: app.contactNumber,
+                    phone: matchedUser?.phone || app.contactNumber,
                     joinDate: app.createdAt || app.date,
                     activeLoans: app.status === 'Approved' ? 1 : 0,
                     totalDebt: app.status === 'Approved' ? app.loanAmount : 0,
-                    status: 'active'
+                    status: 'active',
+                    nic: app.nic
                 });
             } else {
                 // If customer already exists, just accumulate debt and active loans from other approved apps
@@ -1517,6 +1602,102 @@ app.get('/api/notifications', async (req, res) => {
     } catch (error) {
         console.error('Error fetching notifications:', error);
         res.status(500).json({ status: 'error', message: 'Failed to fetch notifications', error: error.message });
+    }
+});
+
+// ─────────────────────────────────────────────
+// Profile Management Routes
+// ─────────────────────────────────────────────
+
+// JWT auth middleware (reusable inline)
+const requireAuth = (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ status: 'error', message: 'Authentication required.' });
+    }
+    try {
+        const token = authHeader.split(' ')[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+        req.userId = decoded.id;
+        next();
+    } catch {
+        return res.status(401).json({ status: 'error', message: 'Invalid or expired token.' });
+    }
+};
+
+/*
+ * GET /api/profile/me
+ * Returns the logged-in user's profile data.
+ */
+app.get('/api/profile/me', requireAuth, async (req, res) => {
+    try {
+        const user = await User.findById(req.userId).select('-password');
+        if (!user) return res.status(404).json({ status: 'error', message: 'User not found.' });
+        res.json({ status: 'success', user });
+    } catch (error) {
+        console.error('Profile fetch error:', error);
+        res.status(500).json({ status: 'error', message: 'Failed to fetch profile.' });
+    }
+});
+
+/*
+ * PUT /api/profile/update
+ * Update name, phone, branch, department, notes fields.
+ */
+app.put('/api/profile/update', requireAuth, async (req, res) => {
+    try {
+        const { name, phone, branch, department, notes } = req.body;
+        const updates = {};
+        if (name !== undefined)       updates.name = name.trim();
+        if (phone !== undefined)      updates.phone = phone.trim();
+        if (branch !== undefined)     updates.branch = branch.trim();
+        if (department !== undefined) updates.department = department.trim();
+        if (notes !== undefined)      updates.notes = notes.trim();
+
+        const user = await User.findByIdAndUpdate(req.userId, updates, { new: true }).select('-password');
+        if (!user) return res.status(404).json({ status: 'error', message: 'User not found.' });
+
+        // Refresh localStorage-compatible payload
+        res.json({
+            status: 'success',
+            message: 'Profile updated successfully.',
+            user,
+        });
+    } catch (error) {
+        console.error('Profile update error:', error);
+        res.status(500).json({ status: 'error', message: 'Failed to update profile.' });
+    }
+});
+
+/*
+ * PUT /api/profile/change-password
+ * Verifies current password then hashes and saves the new one.
+ */
+app.put('/api/profile/change-password', requireAuth, async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ status: 'error', message: 'Both current and new passwords are required.' });
+        }
+        if (newPassword.length < 8) {
+            return res.status(400).json({ status: 'error', message: 'New password must be at least 8 characters.' });
+        }
+
+        const user = await User.findById(req.userId);
+        if (!user) return res.status(404).json({ status: 'error', message: 'User not found.' });
+
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) {
+            return res.status(401).json({ status: 'error', message: 'Current password is incorrect.' });
+        }
+
+        user.password = await bcrypt.hash(newPassword, 10);
+        await user.save();
+
+        res.json({ status: 'success', message: 'Password changed successfully.' });
+    } catch (error) {
+        console.error('Password change error:', error);
+        res.status(500).json({ status: 'error', message: 'Failed to change password.' });
     }
 });
 

@@ -527,7 +527,7 @@ export const CustomerDashboard = () => {
                         </div>
 
                         <Card className="p-5">
-                            <h4 className="text-base font-semibold mb-4">AI Insights</h4>
+                            <h4 className="text-base font-semibold mb-4">Loanify Risk Engine Insights</h4>
                             <div className="space-y-2">
                                 {selectedApplication.eligibilityResult.insights.map((insight, index) => (
                                     <p key={`${insight}-${index}`} className="text-sm text-slate-700 dark:text-slate-300">

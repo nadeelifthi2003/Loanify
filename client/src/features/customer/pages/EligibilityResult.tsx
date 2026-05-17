@@ -83,7 +83,7 @@ export const EligibilityResult = () => {
                             {result.verdict}
                         </h1>
                         <p className="mt-2 text-gray-600 dark:text-gray-300">
-                            Hi <strong>{applicantName}</strong>! Based on your income, loan details, and submitted documents, our AI engine has assessed your loan eligibility.
+                            Hi <strong>{applicantName}</strong>! Based on your income, loan details, and submitted documents, the Loanify Risk Engine has assessed your loan eligibility.
                         </p>
                     </div>
                     <div className="text-center md:text-right flex-shrink-0">
@@ -184,7 +184,7 @@ export const EligibilityResult = () => {
             {/* Insights */}
             <Card className="p-6 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/10 dark:to-purple-900/10 border-indigo-100 dark:border-indigo-900">
                 <h2 className="text-base font-bold text-indigo-900 dark:text-indigo-300 mb-3 flex items-center gap-2">
-                    <FileText className="w-5 h-5" /> AI Engine Insights
+                    <FileText className="w-5 h-5" /> Loanify Risk Engine Insights
                 </h2>
                 <ul className="space-y-2">
                     {result.insights.map((ins, i) => (

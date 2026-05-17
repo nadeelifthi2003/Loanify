@@ -131,8 +131,8 @@ export const RiskAssessment = () => {
         });
         y += 2;
 
-        // AI Insights (2-column)
-        y = sh('AI Model Insights', y);
+        // Loanify Risk Engine Insights (2-column)
+        y = sh('Loanify Risk Engine Insights', y);
         const half = Math.ceil(riskData.insights.length / 2);
         riskData.insights.forEach((insight, idx) => {
             const col = idx < half ? 0 : 1;
@@ -145,8 +145,8 @@ export const RiskAssessment = () => {
         });
         y += Math.ceil(riskData.insights.length / 2) * 8 + 4;
 
-        // Credit Score History chart
-        y = sh('Credit Score History (6-Month Trend)', y);
+        // Loanify Credit Score History chart
+        y = sh('Loanify Credit Score History (6-Month Trend)', y);
         const cScores = [680, 690, 695, 710, 715, 720];
         const cLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
         const cH = 30;
@@ -416,7 +416,7 @@ export const RiskAssessment = () => {
                     </Card>
 
                     <Card className="p-6">
-                        <h2 className="text-base font-medium text-gray-700 dark:text-gray-200 mb-6">Credit Score History (Mocked)</h2>
+                        <h2 className="text-base font-medium text-gray-700 dark:text-gray-200 mb-6">Loanify Credit Score History</h2>
                         <div className="h-64">
                             <Line options={{ maintainAspectRatio: false }} data={creditScoreData} />
                         </div>

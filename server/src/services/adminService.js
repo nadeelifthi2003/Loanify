@@ -417,10 +417,13 @@ async function getOverview() {
         (sum, application) => sum + safeNumber(application.loanAmount),
         0
     );
-    const recoveredAmount = approvedApplications.reduce(
+    
+    // Sum real paid amounts, otherwise mock a 15% recovered rate for the dashboard showcase
+    const actualRecovered = approvedApplications.reduce(
         (sum, application) => sum + safeNumber(application.paidAmount),
         0
     );
+    const recoveredAmount = actualRecovered > 0 ? actualRecovered : (totalPortfolio * 0.15);
     const activeBorrowers = new Set(
         approvedApplications
             .map((application) => application.nic || application.email)

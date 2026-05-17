@@ -39,19 +39,32 @@ export const OfficerDashboard = () => {
     const pendingCount = applications.filter(a => a.status === 'Pending').length;
     // Approvals checking date string to just simulate a today's count
     const approvedToday = applications.filter(a => a.status === 'Approved').length; // Kept simple
-    // Mock high risk indicator by loanAmount > 100000 simply for visuals on pending items
-    const riskFlagged = applications.filter(a => a.status === 'Pending' && a.loanAmount > 100000).length;
+    // Mock high risk indicator by loanAmount > 1000000 simply for visuals on pending items
+    const riskFlagged = applications.filter(a => a.status === 'Pending' && a.loanAmount > 1000000).length;
     const recentApplications = applications.slice(0, 4);
 
     const pendingTasks = applications
         .filter(a => a.status === 'Pending')
         .slice(0, 3)
         .map(app => {
-            if (app.loanAmount > 100000) {
+            if (app.loanAmount > 1000000) {
                 return { title: 'High Risk Review', desc: `Review application #${app.id} for ${app.fullName} flagged for high amount.`, link: `/officer/application/${app.id}/risk`, color: 'bg-red-500' };
             }
             return { title: 'Standard Verification', desc: `Verify documents for ${app.fullName} application #${app.id}.`, link: `/officer/application/${app.id}`, color: 'bg-amber-500' };
         });
+
+    const getStatusVariant = (status: string) => {
+        switch (status?.toLowerCase()) {
+            case 'approved':
+            case 'manager approved':  return 'success';
+            case 'rejected':
+            case 'manager rejected':  return 'error';
+            case 'manager review':
+            case 'needs info':        return 'warning';
+            case 'pending':           return 'info';
+            default:                  return 'info';
+        }
+    };
 
     if (loading) {
         return <div className="p-8 text-center text-gray-500 animate-pulse">Loading dashboard...</div>;
@@ -70,7 +83,10 @@ export const OfficerDashboard = () => {
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card className="p-4 flex items-center gap-4">
+                <Card 
+                    className="p-4 flex items-center gap-4 cursor-pointer hover:shadow-md transition-shadow hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                    onClick={() => navigate('/officer/applications', { state: { filter: 'Pending' } })}
+                >
                     <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center text-blue-600">
                         <FileText className="w-6 h-6" />
                     </div>
@@ -80,7 +96,10 @@ export const OfficerDashboard = () => {
                     </div>
                 </Card>
 
-                <Card className="p-4 flex items-center gap-4">
+                <Card 
+                    className="p-4 flex items-center gap-4 cursor-pointer hover:shadow-md transition-shadow hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                    onClick={() => navigate('/officer/applications', { state: { filter: 'Approved' } })}
+                >
                     <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center text-green-600">
                         <TrendingUp className="w-6 h-6" />
                     </div>
@@ -90,7 +109,10 @@ export const OfficerDashboard = () => {
                     </div>
                 </Card>
 
-                <Card className="p-4 flex items-center gap-4">
+                <Card 
+                    className="p-4 flex items-center gap-4 cursor-pointer hover:shadow-md transition-shadow hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                    onClick={() => navigate('/officer/applications', { state: { filter: 'Risk Flagged' } })}
+                >
                     <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/20 flex items-center justify-center text-amber-600">
                         <AlertTriangle className="w-6 h-6" />
                     </div>
@@ -100,7 +122,10 @@ export const OfficerDashboard = () => {
                     </div>
                 </Card>
 
-                <Card className="p-4 flex items-center gap-4">
+                <Card 
+                    className="p-4 flex items-center gap-4 cursor-pointer hover:shadow-md transition-shadow hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                    onClick={() => navigate('/officer/customers')}
+                >
                     <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center text-purple-600">
                         <Users className="w-6 h-6" />
                     </div>
@@ -133,7 +158,7 @@ export const OfficerDashboard = () => {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-4">
-                                    <Badge variant={app.status === 'Approved' ? 'success' : app.status === 'Rejected' ? 'error' : app.status === 'Needs Info' ? 'warning' : 'info'} size="sm">
+                                    <Badge variant={getStatusVariant(app.status)} size="sm">
                                         {app.status}
                                     </Badge>
                                     <Button 
