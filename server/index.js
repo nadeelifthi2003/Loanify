@@ -1318,7 +1318,38 @@ app.get('/api/officer/applications/:id', async (req, res) => {
     try {
         const application = await Application.findOne({ id: req.params.id });
         if (!application) return res.status(404).json({ status: 'error', message: 'Application not found' });
-        res.json(application);
+        
+        // Convert to plain object if necessary
+        let appObj = application.toObject ? application.toObject() : application;
+
+        // Fetch the corresponding User to get the latest updated email & phone from Settings
+        if (appObj.email || appObj.fullName) {
+            let matchedUser = null;
+            
+            // 1. Try to match by exact email first
+            if (appObj.email) {
+                matchedUser = await User.findOne({ email: new RegExp('^' + appObj.email.trim() + '$', 'i'), role: 'customer' });
+            }
+            
+            // 2. If email match fails (e.g., user made a typo like "nimal @example.com" in the application), fallback to Name
+            if (!matchedUser && appObj.fullName) {
+                // Use a flexible regex to match the name even if there are middle names or extra spaces
+                const nameParts = appObj.fullName.trim().split(' ').filter(Boolean);
+                if (nameParts.length > 0) {
+                    const flexibleNameRegex = new RegExp(nameParts.join('.*'), 'i');
+                    matchedUser = await User.findOne({ name: flexibleNameRegex, role: 'customer' });
+                    console.log('Matched user by flexible name:', matchedUser ? matchedUser.email : 'None');
+                }
+            }
+
+            if (matchedUser) {
+                appObj.email = matchedUser.email || appObj.email;
+                appObj.contactNumber = matchedUser.phone || appObj.contactNumber;
+                console.log('Overriding app contact info -> Email:', appObj.email, 'Phone:', appObj.contactNumber);
+            }
+        }
+
+        res.json(appObj);
     } catch (error) {
         console.error('Error fetching application details:', error);
         res.status(500).json({ status: 'error', message: 'Failed to fetch application details', error: error.message });
