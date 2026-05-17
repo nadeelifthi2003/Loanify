@@ -49,10 +49,16 @@ export const MyLoans = () => {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 .map((app: any) => {
                     const paid = app.paidAmount || 0;
-                    const amount = app.loanAmount;
+                    const principal = app.loanAmount;
+                    const annualRate = 0.15; // 15% interest rate
+                    const monthlyRate = annualRate / 12;
+                    const months = app.tenure || 12;
+                    const emi = (principal * monthlyRate * Math.pow(1 + monthlyRate, months)) / (Math.pow(1 + monthlyRate, months) - 1);
+                    
+                    const amount = Math.round(emi * months);
                     const balance = Math.max(0, amount - paid);
                     const progress = amount > 0 ? Math.round((paid / amount) * 100) : 0;
-                    const nextPayment = Math.min(balance, Math.round(amount / app.tenure));
+                    const nextPayment = Math.min(balance, Math.round(emi));
                     
                     return {
                         id: app.id,
